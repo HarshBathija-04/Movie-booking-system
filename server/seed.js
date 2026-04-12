@@ -1,0 +1,400 @@
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
+import User from "./models/User.js";
+import Movie from "./models/Movie.js";
+import Show from "./models/Show.js";
+import Seat from "./models/Seat.js";
+import connectDB from "./configs/db.js";
+import createSeatLayout from "./utils/createSeatLayout.js";
+
+dotenv.config();
+
+const movies = [
+  // 10 Bollywood
+  {
+    title: "Dangal",
+    slug: "dangal",
+    description: "Former wrestler Mahavir Singh Phogat and his two wrestler daughters struggle towards glory at the Commonwealth Games in the face of societal oppression.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/4nE0X4Uav4kLwRzyQxKjD6DDBe6.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/fgsHxzQYhG1aWaFk4K9Wk2Axy4O.jpg",
+    genre: ["Biography", "Drama", "Sport"],
+    language: "Hindi",
+    durationMinutes: 161,
+    rating: 8.4,
+    releaseDate: new Date("2016-12-21"),
+    cast: ["Aamir Khan", "Sakshi Tanwar", "Fatima Sana Shaikh"],
+    trailerUrl: "https://www.youtube.com/watch?v=x_7YlGv9u1g",
+    isActive: true,
+  },
+  {
+    title: "3 Idiots",
+    slug: "3-idiots",
+    description: "Two friends are searching for their long lost companion. They revisit their college days and recall the memories of their friend who inspired them to think differently.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/66A9MqXOyVFCssoloscw79z0Xh5.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/u7SeO6Y42P7VCTWLhpnLgqZyce4.jpg",
+    genre: ["Comedy", "Drama"],
+    language: "Hindi",
+    durationMinutes: 170,
+    rating: 8.4,
+    releaseDate: new Date("2009-12-25"),
+    cast: ["Aamir Khan", "Madhavan", "Sharman Joshi"],
+    trailerUrl: "https://www.youtube.com/watch?v=K0eDlFX9GMc",
+    isActive: true,
+  },
+  {
+    title: "PK",
+    slug: "pk",
+    description: "An alien on Earth loses the only device he can use to communicate with his spaceship. His innocent nature and child-like questions force the country to evaluate the impact of religion.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/z0TawpQpEsq39cEOf6Y0fXy8vX.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/8eJ1fNulm3bF7qO2qE8uXgRXYoM.jpg",
+    genre: ["Comedy", "Drama", "Sci-Fi"],
+    language: "Hindi",
+    durationMinutes: 153,
+    rating: 8.1,
+    releaseDate: new Date("2014-12-19"),
+    cast: ["Aamir Khan", "Anushka Sharma", "Sanjay Dutt"],
+    trailerUrl: "https://www.youtube.com/watch?v=SOXWc32k4zA",
+    isActive: true,
+  },
+  {
+    title: "Bajrangi Bhaijaan",
+    slug: "bajrangi-bhaijaan",
+    description: "An Indian man with a magnanimous heart takes a young mute Pakistani girl back to her homeland to reunite her with her family.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/nN4GSPEQ6wO4L2w7wIq3zR72TnM.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/1S81X5j2Hw6L6w3HjL1d3c0O9gW.jpg",
+    genre: ["Action", "Comedy", "Drama"],
+    language: "Hindi",
+    durationMinutes: 159,
+    rating: 8.1,
+    releaseDate: new Date("2015-07-17"),
+    cast: ["Salman Khan", "Harshaali Malhotra", "Nawazuddin Siddiqui"],
+    trailerUrl: "https://www.youtube.com/watch?v=vyX4toD395U",
+    isActive: true,
+  },
+  {
+    title: "Sultan",
+    slug: "sultan",
+    description: "A classic underdog tale about a wrestler's journey, looking for a comeback by defeating all odds.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/rXyE3GkE3xG20w4lV9y55jWd2mK.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/1g0vUoO9uN01Z71iXvPQy3sU7I5.jpg",
+    genre: ["Action", "Drama", "Sport"],
+    language: "Hindi",
+    durationMinutes: 170,
+    rating: 7.0,
+    releaseDate: new Date("2016-07-06"),
+    cast: ["Salman Khan", "Anushka Sharma", "Randeep Hooda"],
+    trailerUrl: "https://www.youtube.com/watch?v=wPxqcq6Byq0",
+    isActive: true,
+  },
+  {
+    title: "Dhoom 3",
+    slug: "dhoom-3",
+    description: "When Sahir, a circus entertainer trained in magic and acrobatics, turns into a thief to take down a corrupt bank in Chicago, Indian officers Jai and Ali are called to catch him.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/9e0iU5M4OUMdI9kK0QkXqGQQ9Cg.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/x8Jt1lM4hI5y5Wz5wKqLwBqC2eH.jpg",
+    genre: ["Action", "Thriller"],
+    language: "Hindi",
+    durationMinutes: 172,
+    rating: 5.4,
+    releaseDate: new Date("2013-12-20"),
+    cast: ["Aamir Khan", "Katrina Kaif", "Abhishek Bachchan"],
+    trailerUrl: "https://www.youtube.com/watch?v=yeF_b8EQcK0",
+    isActive: true,
+  },
+  {
+    title: "Padmaavat",
+    slug: "padmaavat",
+    description: "Set in medieval Rajasthan, Queen Padmavati is married to a noble king and they live in a prosperous fortress with their subjects until an ambitious Sultan hears of Padmavati's beauty.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/r8wX7JpC8D1z3C9HnYH2Q4p5C9S.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/2PzQo4z3aN7oHn5x8H6Q9nE7xXy.jpg",
+    genre: ["Drama", "History", "Romance"],
+    language: "Hindi",
+    durationMinutes: 164,
+    rating: 7.0,
+    releaseDate: new Date("2018-01-25"),
+    cast: ["Deepika Padukone", "Ranveer Singh", "Shahid Kapoor"],
+    trailerUrl: "https://www.youtube.com/watch?v=8YaF2m7hCx0",
+    isActive: true,
+  },
+  {
+    title: "Sanju",
+    slug: "sanju",
+    description: "Sanju is a biopic of the controversial life of actor Sanjay Dutt: his film career, jail sentence and personal life.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/vQGxvZ4E4yK8xG5DEx9G1i6Xw0S.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/8gqY5X4d34a4M40X2d93n64qXy5.jpg",
+    genre: ["Biography", "Comedy", "Drama"],
+    language: "Hindi",
+    durationMinutes: 155,
+    rating: 7.7,
+    releaseDate: new Date("2018-06-29"),
+    cast: ["Ranbir Kapoor", "Paresh Rawal", "Vicky Kaushal"],
+    trailerUrl: "https://www.youtube.com/watch?v=1J76wN0TPI4",
+    isActive: true,
+  },
+  {
+    title: "Chennai Express",
+    slug: "chennai-express",
+    description: "A man's journey to fulfill his late grandfather's final wish turns into an unexpected adventure when he meets a young woman from a unique family down South.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/nE2kCQn9u5D7X3D3S8k8vI8D29b.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/m9tA0WpUaTDElVpA55K50M5PxyO.jpg",
+    genre: ["Action", "Comedy", "Romance"],
+    language: "Hindi",
+    durationMinutes: 141,
+    rating: 6.0,
+    releaseDate: new Date("2013-08-08"),
+    cast: ["Shah Rukh Khan", "Deepika Padukone"],
+    trailerUrl: "https://www.youtube.com/watch?v=hBqzrcE2cZg",
+    isActive: true,
+  },
+  {
+    title: "Kabhi Khushi Kabhie Gham",
+    slug: "kabhi-khushi-kabhie-gham",
+    description: "An adopted son of a wealthy Indian patriarch is banished when he chooses to marry a middle class woman.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/nF0ZzDzj2n0Q7AThB3l9E3A9gQ9.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/n2ZntcE6V4zFEtQYmP3H7AOT9Qz.jpg",
+    genre: ["Drama", "Musical", "Romance"],
+    language: "Hindi",
+    durationMinutes: 210,
+    rating: 7.4,
+    releaseDate: new Date("2001-12-14"),
+    cast: ["Amitabh Bachchan", "Jaya Bachchan", "Shah Rukh Khan"],
+    trailerUrl: "https://www.youtube.com/watch?v=7uY1JbWZKPA",
+    isActive: true,
+  },
+  // 10 Hollywood
+  {
+    title: "Inception",
+    slug: "inception",
+    description: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+    genre: ["Action", "Sci-Fi", "Thriller"],
+    language: "English",
+    durationMinutes: 148,
+    rating: 8.8,
+    releaseDate: new Date("2010-07-16"),
+    cast: ["Leonardo DiCaprio", "Joseph Gordon-Levitt", "Elliot Page"],
+    trailerUrl: "https://www.youtube.com/watch?v=YoHD9XEInc0",
+    isActive: true,
+  },
+  {
+    title: "Interstellar",
+    slug: "interstellar",
+    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg",
+    genre: ["Adventure", "Drama", "Sci-Fi"],
+    language: "English",
+    durationMinutes: 169,
+    rating: 8.6,
+    releaseDate: new Date("2014-11-07"),
+    cast: ["Matthew McConaughey", "Anne Hathaway", "Jessica Chastain"],
+    trailerUrl: "https://www.youtube.com/watch?v=zSWdZVtXT7E",
+    isActive: true,
+  },
+  {
+    title: "The Dark Knight",
+    slug: "the-dark-knight",
+    description: "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/dqK9Hag1054tghRQSqLSfrkvQnA.jpg",
+    genre: ["Action", "Crime", "Drama"],
+    language: "English",
+    durationMinutes: 152,
+    rating: 9.0,
+    releaseDate: new Date("2008-07-18"),
+    cast: ["Christian Bale", "Heath Ledger", "Aaron Eckhart"],
+    trailerUrl: "https://www.youtube.com/watch?v=EXeTwQWrcwY",
+    isActive: true,
+  },
+  {
+    title: "Avengers: Endgame",
+    slug: "avengers-endgame",
+    description: "After the devastating events of Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
+    genre: ["Action", "Adventure", "Sci-Fi"],
+    language: "English",
+    durationMinutes: 181,
+    rating: 8.4,
+    releaseDate: new Date("2019-04-26"),
+    cast: ["Robert Downey Jr.", "Chris Evans", "Mark Ruffalo"],
+    trailerUrl: "https://www.youtube.com/watch?v=TcMBFSGVi1c",
+    isActive: true,
+  },
+  {
+    title: "Oppenheimer",
+    slug: "oppenheimer",
+    description: "The story of American scientist, J. Robert Oppenheimer, and his role in the development of the atomic bomb.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    genre: ["Biography", "Drama", "History"],
+    language: "English",
+    durationMinutes: 180,
+    rating: 8.6,
+    releaseDate: new Date("2023-07-21"),
+    cast: ["Cillian Murphy", "Emily Blunt", "Matt Damon"],
+    trailerUrl: "https://www.youtube.com/watch?v=uYPbbksJxIg",
+    isActive: true,
+  },
+  {
+    title: "The Matrix",
+    slug: "the-matrix",
+    description: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/lZpWprJqbIFpEV566NGNIdiISVC.jpg",
+    genre: ["Action", "Sci-Fi"],
+    language: "English",
+    durationMinutes: 136,
+    rating: 8.7,
+    releaseDate: new Date("1999-03-31"),
+    cast: ["Keanu Reeves", "Laurence Fishburne", "Carrie-Anne Moss"],
+    trailerUrl: "https://www.youtube.com/watch?v=vKQi3bBA1y8",
+    isActive: true,
+  },
+  {
+    title: "Gladiator",
+    slug: "gladiator",
+    description: "A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/mD2jF7mXnE7S1TkslsVdlyvBf1F.jpg",
+    genre: ["Action", "Adventure", "Drama"],
+    language: "English",
+    durationMinutes: 155,
+    rating: 8.5,
+    releaseDate: new Date("2000-05-05"),
+    cast: ["Russell Crowe", "Joaquin Phoenix", "Connie Nielsen"],
+    trailerUrl: "https://www.youtube.com/watch?v=owK1qxDselE",
+    isActive: true,
+  },
+  {
+    title: "Titanic",
+    slug: "titanic",
+    description: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/yDI6D5ZQh6tEEa8bS60M4uhoow1.jpg",
+    genre: ["Drama", "Romance"],
+    language: "English",
+    durationMinutes: 194,
+    rating: 7.9,
+    releaseDate: new Date("1997-12-19"),
+    cast: ["Leonardo DiCaprio", "Kate Winslet", "Billy Zane"],
+    trailerUrl: "https://www.youtube.com/watch?v=kVrqfYjkTdQ",
+    isActive: true,
+  },
+  {
+    title: "Avatar",
+    slug: "avatar",
+    description: "A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following his orders and protecting the world he feels is his home.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/kyeqWdyKINLSywicWSXb39MIGTO.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/AmR3JG1VQWwhgHjAMk6ZfA40ePE.jpg",
+    genre: ["Action", "Adventure", "Fantasy"],
+    language: "English",
+    durationMinutes: 162,
+    rating: 7.9,
+    releaseDate: new Date("2009-12-18"),
+    cast: ["Sam Worthington", "Zoe Saldana", "Sigourney Weaver"],
+    trailerUrl: "https://www.youtube.com/watch?v=5PSNL1qE6VY",
+    isActive: true,
+  },
+  {
+    title: "Jurassic Park",
+    slug: "jurassic-park",
+    description: "A pragmatic paleontologist visiting an almost complete theme park is tasked with protecting a couple of kids after a power failure causes the park's cloned dinosaurs to run loose.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/oU7Oq2kFAAlGqbU4VoAE36A4V4l.jpg",
+    bannerUrl: "https://image.tmdb.org/t/p/original/qZ4NYnwA2HDeLhM5I3g9x9oEaO7.jpg",
+    genre: ["Action", "Adventure", "Sci-Fi"],
+    language: "English",
+    durationMinutes: 127,
+    rating: 8.2,
+    releaseDate: new Date("1993-06-11"),
+    cast: ["Sam Neill", "Laura Dern", "Jeff Goldblum"],
+    trailerUrl: "https://www.youtube.com/watch?v=QDatC4jeWWo",
+    isActive: true,
+  }
+];
+
+const seedData = async () => {
+  try {
+    await connectDB();
+
+    console.log("Clearing Database...");
+    await User.deleteMany();
+    await Movie.deleteMany();
+    await Show.deleteMany();
+    await Seat.deleteMany();
+
+    console.log("Seeding Users...");
+    const adminPassword = await bcrypt.hash("admin123", 10);
+    const userPassword = await bcrypt.hash("user123", 10);
+    
+    await User.create([
+      {
+        name: "Admin User",
+        email: "admin@example.com",
+        phone: "9999999999",
+        password: adminPassword,
+        role: "admin",
+      },
+      {
+        name: "Client User",
+        email: "client@example.com",
+        phone: "8888888888",
+        password: userPassword,
+        role: "user",
+      }
+    ]);
+    
+    console.log("Seeding Movies...");
+    const insertedMovies = await Movie.insertMany(movies);
+    
+    console.log("Seeding Shows and Seats...");
+    
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const showDate1 = today.toISOString().split("T")[0];
+    const showDate2 = tomorrow.toISOString().split("T")[0];
+
+    const showTimes = ["10:00", "13:15", "16:45", "20:00", "22:30"];
+    const screens = ["Screen 1", "Screen 2", "Screen 3", "IMAX"];
+    
+    for (const movie of insertedMovies) {
+      for (let i = 0; i < 3; i++) { 
+        const showDate = i % 2 === 0 ? showDate1 : showDate2;
+        const showTime = showTimes[(i + Math.floor(Math.random() * 3)) % showTimes.length];
+        const showDateTime = new Date(`${showDate}T${showTime}:00`);
+
+        const show = await Show.create({
+          movie: movie._id,
+          theaterName: "Aditya Cinemas",
+          screenName: screens[Math.floor(Math.random() * screens.length)],
+          showDate,
+          showTime,
+          showDateTime,
+          ticketPrice: Math.floor(Math.random() * 100) + 150, 
+          totalSeats: 58, 
+          format: "2D",
+        });
+
+        const seatsToInsert = createSeatLayout().slice(0, show.totalSeats).map((seat) => ({
+          ...seat,
+          show: show._id,
+        }));
+
+        await Seat.insertMany(seatsToInsert);
+      }
+    }
+
+    console.log("Data Seeded successfully!");
+    process.exit(0);
+
+  } catch (error) {
+    console.error("Error seeding data: ", error);
+    process.exit(1);
+  }
+};
+
+seedData();
