@@ -123,8 +123,8 @@ export const seed = async () => {
       for (let i = 0; i < movieIds.length; i++) {
         for (let k = 0; k < 2; k++) {
           const slot = (i * 2 + k + day * 3) % slotsPerDay;
-          const screen = SCREENS[slot % SCREENS.length];
-          const time = SLOTS[Math.floor(slot / SCREENS.length)];
+          const screen = SCREENS[Math.floor(slot / SLOTS.length)]; // consecutive slots = same screen, different time
+          const time = SLOTS[slot % SLOTS.length];
           const premiumScreen = screen === "IMAX" || screen === "Dolby Atmos";
           const basePrice = (premiumScreen ? 320 : 180) + (time >= "19:00" ? 60 : 0);
           const { rows } = await client.query(

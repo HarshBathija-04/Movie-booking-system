@@ -21,3 +21,7 @@ export const dayLabel = (ymd) => {
   if (ymd === tomorrow) return "Tomorrow";
   return formatDay(ymd);
 };
+
+/** "Screen 2 · 3D", or just "IMAX" when the screen and format share a name. */
+export const screenLabel = (show) =>
+  show.format && show.format !== show.screenName ? `${show.screenName} · ${show.format}` : show.screenName;

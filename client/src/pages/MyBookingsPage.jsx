@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
 import useFetch from "../hooks/useFetch";
-import { dayLabel, formatMoney, formatTime } from "../lib/format";
+import { dayLabel, formatMoney, formatTime, screenLabel } from "../lib/format";
 
 function TicketStub({ booking, past }) {
   const { movie, show } = booking;
@@ -20,9 +20,7 @@ function TicketStub({ booking, past }) {
         <p className="mt-1 text-sm text-muted">
           {dayLabel(show.showDate)} · {formatTime(show.showTime)}
         </p>
-        <p className="text-sm text-muted">
-          {show.screenName} · {show.format}
-        </p>
+        <p className="text-sm text-muted">{screenLabel(show)}</p>
         <p className="mt-2 text-sm">
           <span className="text-subtle">Seats </span>
           <span className="font-semibold">{booking.seats.join(", ")}</span>

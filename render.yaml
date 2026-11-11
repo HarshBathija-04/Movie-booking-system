@@ -1,0 +1,34 @@
+# Render Blueprint: the API web service only.
+# The PostgreSQL database is shared across projects and created once by hand, so there is
+# intentionally no `databases:` block. Paste its Internal Database URL into DATABASE_URL.
+services:
+  - type: web
+    name: cineverse-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    # Migrations and the idempotent seed run on every boot: they are no-ops when up to date,
+    # and they roll the demo showtimes forward so the schedule never goes stale.
+    startCommand: npm run db:migrate && npm run db:seed && npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DB_SCHEMA
+        value: movie_booking
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import SeatGrid from "../components/SeatGrid";
 import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
 import useFetch from "../hooks/useFetch";
-import { dayLabel, formatMoney, formatTime } from "../lib/format";
+import { dayLabel, formatMoney, formatTime, screenLabel } from "../lib/format";
 import api, { errorMessage } from "../services/api";
 
 const MAX_SEATS = 10;
@@ -98,9 +98,7 @@ export default function SeatBookingPage() {
           <p className="mt-1 text-sm text-muted">
             {dayLabel(show.showDate)}, {formatTime(show.showTime)}
           </p>
-          <p className="text-sm text-muted">
-            {show.screenName} · {show.format}
-          </p>
+          <p className="text-sm text-muted">{screenLabel(show)}</p>
         </div>
       </div>
 
