@@ -1,9 +1,15 @@
-import { Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { errorMessage } from "../services/api";
+
+const PERKS = [
+  "Pick exact seats on a live seat map that locks the moment you pay.",
+  "QR tickets for every booking, saved to your wallet.",
+  "An AI concierge that picks tonight’s film for you.",
+];
 
 const DEMO = { emailOrPhone: "demo@cineverse.app", password: "demo1234" };
 
@@ -68,9 +74,11 @@ export default function AuthPage() {
           <span className="text-marquee">waiting.</span>
         </h1>
         <ul className="mt-8 space-y-3 text-muted">
-          <li>Pick exact seats on a live seat map that locks the moment you pay.</li>
-          <li>QR tickets for every booking, saved to your wallet.</li>
-          <li>An AI concierge that picks tonight&apos;s film for you.</li>
+          {PERKS.map((perk) => (
+            <li key={perk} className="flex items-start gap-3">
+              <CheckCircle2 aria-hidden className="mt-0.5 size-5 shrink-0 text-marquee" /> {perk}
+            </li>
+          ))}
         </ul>
       </div>
 

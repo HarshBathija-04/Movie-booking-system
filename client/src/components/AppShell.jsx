@@ -74,9 +74,11 @@ export default function AppShell() {
                 </button>
               </div>
             ) : (
-              <Link to="/auth" className="btn-primary btn-sm hidden md:inline-flex">
-                Sign in
-              </Link>
+              pathname !== "/auth" && (
+                <Link to="/auth" className="btn-primary btn-sm hidden md:inline-flex">
+                  Sign in
+                </Link>
+              )
             )}
             <button
               type="button"

@@ -165,7 +165,10 @@ export default function SeatBookingPage() {
       </Link>
       <div className="mb-6">
         <h1 className="display text-4xl sm:text-5xl">Choose your seats</h1>
-        <p className="mt-1 text-sm text-muted">Up to {MAX_SEATS} seats. Use arrow keys to move around the map.</p>
+        <p className="mt-1 text-sm text-muted">
+          Pick up to {MAX_SEATS} seats. Prices rise toward the back rows.
+          <span className="hidden sm:inline"> Arrow keys move around the map.</span>
+        </p>
       </div>
 
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_360px]">
