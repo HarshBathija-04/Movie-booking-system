@@ -2,8 +2,7 @@ import bcrypt from "bcryptjs";
 import { query } from "../configs/db.js";
 import { HttpError } from "../middleware/http.js";
 import { signToken } from "../middleware/auth.js";
-
-const USER_COLUMNS = `id, name, email, phone, role, created_at AS "createdAt"`;
+import { USER_COLS } from "../utils/columns.js";
 
 export const registerUser = async (req, res) => {
   const { name, email, phone, password } = req.body;
@@ -12,7 +11,7 @@ export const registerUser = async (req, res) => {
   // Role is never taken from the request: new accounts are always customers.
   const { rows } = await query(
     `INSERT INTO users (name, email, phone, password_hash) VALUES ($1, $2, $3, $4)
-     ON CONFLICT DO NOTHING RETURNING ${USER_COLUMNS}`,
+     ON CONFLICT DO NOTHING RETURNING ${USER_COLS}`,
     [name, email, phone, hash],
   );
   if (!rows[0]) throw new HttpError(409, "An account with this email or phone already exists", "conflict");
@@ -23,7 +22,7 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { emailOrPhone, password } = req.body;
   const { rows } = await query(
-    `SELECT ${USER_COLUMNS}, password_hash FROM users WHERE email = lower($1) OR phone = $1 LIMIT 1`,
+    `SELECT ${USER_COLS}, password_hash FROM users WHERE email = lower($1) OR phone = $1 LIMIT 1`,
     [emailOrPhone],
   );
   const { password_hash: hash, ...user } = rows[0] || {};

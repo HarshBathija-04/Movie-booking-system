@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import { query, withTransaction } from "../configs/db.js";
 import { HttpError } from "../middleware/http.js";
-import { movieCols, showCols } from "../utils/columns.js";
+import { MOVIE_COLS, SHOW_COLS } from "../utils/columns.js";
 import generateBookingId from "../utils/generateBookingId.js";
 import { totalFor } from "../utils/pricing.js";
 import sendBookingEmail from "../utils/sendBookingEmail.js";
@@ -10,8 +10,8 @@ const BOOKING_SELECT = `
   SELECT b.id, b.booking_code AS "bookingCode", b.seats, b.seat_count AS "seatCount", b.amount,
          b.payment_status AS "paymentStatus", b.payment_method AS "paymentMethod",
          b.email_status AS "emailStatus", b.created_at AS "createdAt",
-         (SELECT row_to_json(x) FROM (SELECT ${movieCols()}) x) AS movie,
-         (SELECT row_to_json(x) FROM (SELECT ${showCols()}, s.starts_at <= now() AS "hasStarted") x) AS show
+         (SELECT row_to_json(x) FROM (SELECT ${MOVIE_COLS}) x) AS movie,
+         (SELECT row_to_json(x) FROM (SELECT ${SHOW_COLS}, s.starts_at <= now() AS "hasStarted") x) AS show
   FROM bookings b JOIN shows s ON s.id = b.show_id JOIN movies m ON m.id = s.movie_id`;
 
 /**

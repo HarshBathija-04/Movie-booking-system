@@ -5,6 +5,8 @@ import { adminOnly, protect } from "../middleware/auth.js";
 import { idParams, validate } from "../middleware/http.js";
 import createSeatLayout from "../utils/createSeatLayout.js";
 
+const SEAT_COUNT = createSeatLayout().length;
+
 const showBody = z.object({
   movieId: z.coerce.number().int().positive("Pick a movie"),
   theaterName: z.string().trim().min(1, "Theater is required").max(120),
@@ -12,7 +14,7 @@ const showBody = z.object({
   showDate: z.iso.date("Use a YYYY-MM-DD date"),
   showTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a HH:MM time"),
   ticketPrice: z.coerce.number().int().min(0).max(10_000),
-  totalSeats: z.coerce.number().int().min(1).max(createSeatLayout().length).default(createSeatLayout().length),
+  totalSeats: z.coerce.number().int().min(1).max(SEAT_COUNT).default(SEAT_COUNT),
   format: z.string().trim().max(20).default("2D"),
 });
 

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { query } from "../configs/db.js";
 import { config } from "../configs/env.js";
+import { USER_COLS } from "../utils/columns.js";
 import { HttpError } from "./http.js";
 
 export const signToken = (user) =>
@@ -17,10 +18,7 @@ export const protect = async (req, res, next) => {
     return next(new HttpError(401, "Your session has expired, please sign in again", "unauthorized"));
   }
 
-  const { rows } = await query(
-    `SELECT id, name, email, phone, role, created_at AS "createdAt" FROM users WHERE id = $1`,
-    [Number(payload.sub)],
-  );
+  const { rows } = await query(`SELECT ${USER_COLS} FROM users WHERE id = $1`, [Number(payload.sub)]);
   if (!rows[0]) return next(new HttpError(401, "Account not found", "unauthorized"));
   req.user = rows[0];
   next();

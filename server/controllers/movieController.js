@@ -1,6 +1,6 @@
 import { query } from "../configs/db.js";
 import { HttpError } from "../middleware/http.js";
-import { movieCols, seatCountCols, showCols } from "../utils/columns.js";
+import { MOVIE_COLS, SEAT_COUNT_COLS, SHOW_COLS } from "../utils/columns.js";
 
 const slugify = (title) =>
   title
@@ -11,7 +11,7 @@ const slugify = (title) =>
 export const getMovies = async (req, res) => {
   const { search, genre } = req.valid.query;
   const { rows } = await query(
-    `SELECT ${movieCols()},
+    `SELECT ${MOVIE_COLS},
             min(s.starts_at) AS "nextShowAt",
             count(s.id) AS "upcomingShows",
             min(s.ticket_price) AS "priceFrom"
@@ -29,11 +29,11 @@ export const getMovies = async (req, res) => {
 
 export const getMovieById = async (req, res) => {
   const { id } = req.valid.params;
-  const { rows } = await query(`SELECT ${movieCols()} FROM movies m WHERE m.id = $1 AND m.is_active`, [id]);
+  const { rows } = await query(`SELECT ${MOVIE_COLS} FROM movies m WHERE m.id = $1 AND m.is_active`, [id]);
   if (!rows[0]) throw new HttpError(404, "Movie not found", "not_found");
 
   const { rows: shows } = await query(
-    `SELECT ${showCols()}, ${seatCountCols()} FROM shows s
+    `SELECT ${SHOW_COLS}, ${SEAT_COUNT_COLS} FROM shows s
      WHERE s.movie_id = $1 AND s.starts_at > now() ORDER BY s.starts_at`,
     [id],
   );

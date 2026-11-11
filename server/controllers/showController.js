@@ -1,6 +1,6 @@
 import { query, withTransaction } from "../configs/db.js";
 import { HttpError } from "../middleware/http.js";
-import { movieCols, seatCountCols, showCols } from "../utils/columns.js";
+import { MOVIE_COLS, SEAT_COUNT_COLS, SHOW_COLS } from "../utils/columns.js";
 import createSeatLayout from "../utils/createSeatLayout.js";
 import { categoryPrices } from "../utils/pricing.js";
 
@@ -9,7 +9,7 @@ const IST = "($1::date + $2::time) AT TIME ZONE 'Asia/Kolkata'";
 export const getShows = async (req, res) => {
   const { movieId } = req.valid.query;
   const { rows } = await query(
-    `SELECT ${showCols()}, ${seatCountCols()}, m.title AS "movieTitle", m.poster_url AS "moviePosterUrl"
+    `SELECT ${SHOW_COLS}, ${SEAT_COUNT_COLS}, m.title AS "movieTitle", m.poster_url AS "moviePosterUrl"
      FROM shows s JOIN movies m ON m.id = s.movie_id
      WHERE s.starts_at > now() - interval '1 day' AND ($1::int IS NULL OR s.movie_id = $1)
      ORDER BY s.starts_at`,
@@ -21,8 +21,8 @@ export const getShows = async (req, res) => {
 export const getShowById = async (req, res) => {
   const { id } = req.valid.params;
   const { rows } = await query(
-    `SELECT ${showCols()}, s.starts_at <= now() AS "hasStarted",
-            (SELECT row_to_json(x) FROM (SELECT ${movieCols()}) x) AS movie
+    `SELECT ${SHOW_COLS}, s.starts_at <= now() AS "hasStarted",
+            (SELECT row_to_json(x) FROM (SELECT ${MOVIE_COLS}) x) AS movie
      FROM shows s JOIN movies m ON m.id = s.movie_id WHERE s.id = $1`,
     [id],
   );
