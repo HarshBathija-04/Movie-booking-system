@@ -1,8 +1,8 @@
-import { ArrowRight, Clock, Star } from "lucide-react";
+import { ArrowRight, CalendarX, Clock, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import Concierge from "../components/Concierge";
 import MovieCard, { MovieCardSkeleton, MovieGrid } from "../components/MovieCard";
-import { ErrorState, Poster, Skeleton } from "../components/ui";
+import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
 import useFetch from "../hooks/useFetch";
 import { dayLabel, formatRuntime, formatTime } from "../lib/format";
 
@@ -118,6 +118,10 @@ export default function HomePage() {
           </div>
           {error ? (
             <ErrorState message={error} onRetry={reload} />
+          ) : !loading && !nowShowing.length ? (
+            <EmptyState icon={CalendarX} title="No shows scheduled right now">
+              New showtimes are added every day. Check back soon.
+            </EmptyState>
           ) : (
             <MovieGrid>
               {loading
