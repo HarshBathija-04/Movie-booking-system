@@ -1,6 +1,5 @@
 import { CalendarClock, Clapperboard, IndianRupee, ReceiptText, Ticket, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import StatCard from "../../components/StatCard";
 import { ErrorState, Skeleton } from "../../components/ui";
 import useFetch from "../../hooks/useFetch";
 import { formatMoney } from "../../lib/format";
@@ -30,7 +29,15 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {loading || !tiles
           ? Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-24" />)
-          : tiles.map(([label, value, icon]) => <StatCard key={label} label={label} value={value} icon={icon} />)}
+          : tiles.map(([label, value, Icon]) => (
+              <div key={label} className="card p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-muted">{label}</p>
+                  <Icon aria-hidden className="size-4 text-subtle" />
+                </div>
+                <p className="mt-2 text-3xl font-bold tabular-nums">{value}</p>
+              </div>
+            ))}
       </div>
       <section aria-labelledby="recent">
         <div className="mb-3 flex items-center justify-between">

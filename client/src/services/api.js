@@ -5,12 +5,6 @@ const api = axios.create({
   timeout: 90_000, // free-tier backend can take up to a minute to wake from sleep
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
 /* Cold-start detection: if any request is still pending after 3s, tell the UI the server is waking up. */
 const SLOW_MS = 3000;
 let slow = 0;
@@ -22,6 +16,8 @@ export const subscribeWaking = (fn) => {
 };
 
 api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   config.slowTimer = setTimeout(() => {
     config.wasSlow = true;
     slow += 1;

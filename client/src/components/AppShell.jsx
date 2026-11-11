@@ -7,7 +7,7 @@ import { WakingBanner } from "./ui";
 const navClass = ({ isActive }) =>
   `rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive ? "text-marquee" : "text-muted hover:text-copy"}`;
 
-export const Logo = () => (
+const Logo = () => (
   <Link to="/" className="flex items-center gap-2.5" aria-label="CineVerse home">
     <span className="grid size-9 place-items-center rounded-lg bg-marquee text-marquee-ink">
       <Ticket aria-hidden className="size-5 -rotate-12" strokeWidth={2.5} />

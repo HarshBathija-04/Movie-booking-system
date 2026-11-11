@@ -27,7 +27,7 @@ const FIELDS = {
 };
 
 export default function AuthPage() {
-  const { user, login, register } = useAppContext();
+  const { user, authenticate } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState("login");
@@ -42,7 +42,7 @@ export default function AuthPage() {
     setSubmitting(true);
     setErrors({});
     try {
-      const u = mode === "login" ? await login(payload) : await register(payload);
+      const u = await authenticate(mode, payload);
       navigate(u.role === "admin" && target === "/" ? "/admin" : target, { replace: true });
     } catch (err) {
       const details = err.response?.data?.error?.details;

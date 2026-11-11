@@ -5,7 +5,7 @@ import { subscribeWaking } from "../services/api";
 const POSTER_HUES = [12, 38, 200, 265, 330, 160, 220, 290];
 
 /** Movie poster with a designed typographic fallback when the image is missing or fails to load. */
-export function Poster({ movie, className = "", sizes, eager = false }) {
+export function Poster({ movie, className = "", eager = false }) {
   const [failed, setFailed] = useState(false);
   if (movie?.posterUrl && !failed) {
     return (
@@ -14,7 +14,6 @@ export function Poster({ movie, className = "", sizes, eager = false }) {
         alt={`${movie.title} poster`}
         loading={eager ? "eager" : "lazy"}
         decoding="async"
-        sizes={sizes}
         onError={() => setFailed(true)}
         className={`aspect-[2/3] w-full bg-raised object-cover ${className}`}
       />

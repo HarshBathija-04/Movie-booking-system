@@ -31,17 +31,12 @@ export const AppProvider = ({ children }) => {
     toast.success("Signed out");
   }, [persistSession]);
 
-  const login = async (payload) => {
-    const { data } = await api.post("/auth/login", payload);
+  /** mode is "login" or "register", matching the API route. */
+  const authenticate = async (mode, payload) => {
+    const { data } = await api.post(`/auth/${mode}`, payload);
     persistSession(data.token, data.user);
-    toast.success(`Welcome back, ${data.user.name.split(" ")[0]}`);
-    return data.user;
-  };
-
-  const register = async (payload) => {
-    const { data } = await api.post("/auth/register", payload);
-    persistSession(data.token, data.user);
-    toast.success("Account created - enjoy the show!");
+    const firstName = data.user.name.split(" ")[0];
+    toast.success(mode === "login" ? `Welcome back, ${firstName}` : `You're in, ${firstName}. Enjoy the show!`);
     return data.user;
   };
 
@@ -63,7 +58,7 @@ export const AppProvider = ({ children }) => {
     return () => window.removeEventListener("auth:expired", onExpired);
   }, [persistSession]);
 
-  return <AppContext.Provider value={{ user, login, logout, register }}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={{ user, authenticate, logout }}>{children}</AppContext.Provider>;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components

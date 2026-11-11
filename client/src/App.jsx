@@ -1,9 +1,8 @@
 import { Clapperboard } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
-import AdminRoute from "./components/AdminRoute";
 import AppShell from "./components/AppShell";
-import ProtectedRoute from "./components/ProtectedRoute";
+import RequireAuth from "./components/RequireAuth";
 import { EmptyState, Skeleton } from "./components/ui";
 import AuthPage from "./pages/AuthPage";
 import BookingDetailsPage from "./pages/BookingDetailsPage";
@@ -36,7 +35,7 @@ const NotFound = () => (
   </div>
 );
 
-const protect = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
+const protect = (el) => <RequireAuth>{el}</RequireAuth>;
 
 export default function App() {
   return (
@@ -52,7 +51,7 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <AdminRoute>
+            <RequireAuth admin>
               <Suspense
                 fallback={
                   <div className="page py-10">
@@ -62,7 +61,7 @@ export default function App() {
               >
                 <AdminLayout />
               </Suspense>
-            </AdminRoute>
+            </RequireAuth>
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
