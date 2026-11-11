@@ -8,6 +8,7 @@ const TIERS = {
 };
 
 const AISLE_AFTER = 5;
+const SOLD = "bg-line [background-image:repeating-linear-gradient(45deg,transparent_0_3px,rgb(0_0_0/0.35)_3px_5px)]";
 
 /**
  * Interactive seat map. Arrow keys move between seats (roving tabindex), Space/Enter toggles.
@@ -86,7 +87,7 @@ export default function SeatGrid({ seats, selected, prices, onToggle, disabled }
                       recliner ? "w-8 sm:w-11" : "w-6 sm:w-8",
                       c === AISLE_AFTER && rowSeats.length > 8 ? "ml-3 sm:ml-5" : "",
                       seat.isBooked
-                        ? "cursor-not-allowed border-transparent bg-line [background-image:repeating-linear-gradient(45deg,transparent_0_3px,rgb(0_0_0/0.35)_3px_5px)] text-transparent"
+                        ? `cursor-not-allowed border-transparent ${SOLD} text-transparent`
                         : isSelected
                           ? "scale-105 border-marquee bg-marquee text-marquee-ink shadow-(--shadow-glow)"
                           : `${TIERS[seat.category].swatch} text-transparent sm:text-subtle`,
@@ -112,11 +113,7 @@ export default function SeatGrid({ seats, selected, prices, onToggle, disabled }
           <span aria-hidden className="size-4 rounded-sm bg-marquee" /> Selected
         </li>
         <li className="inline-flex items-center gap-2">
-          <span
-            aria-hidden
-            className="size-4 rounded-sm bg-line [background-image:repeating-linear-gradient(45deg,transparent_0_3px,rgb(0_0_0/0.35)_3px_5px)]"
-          />{" "}
-          Sold
+          <span aria-hidden className={`size-4 rounded-sm ${SOLD}`} /> Sold
         </li>
       </ul>
     </div>

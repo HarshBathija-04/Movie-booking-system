@@ -17,4 +17,18 @@ const createSeatLayout = () =>
     })),
   );
 
+/** Bulk-insert one seat row per layout entry for a show, in a single statement. */
+export const insertSeats = (client, showId, layout) =>
+  client.query(
+    `INSERT INTO seats (show_id, row_label, number, seat_number, category)
+     SELECT $1::int, * FROM unnest($2::text[], $3::int[], $4::text[], $5::text[])`,
+    [
+      showId,
+      layout.map((s) => s.row),
+      layout.map((s) => s.number),
+      layout.map((s) => s.seatNumber),
+      layout.map((s) => s.category),
+    ],
+  );
+
 export default createSeatLayout;

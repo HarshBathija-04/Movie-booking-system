@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { pool, withTransaction } from "../configs/db.js";
-import createSeatLayout from "../utils/createSeatLayout.js";
+import createSeatLayout, { insertSeats } from "../utils/createSeatLayout.js";
 import generateBookingId from "../utils/generateBookingId.js";
 import { totalFor } from "../utils/pricing.js";
 
@@ -144,17 +144,7 @@ export const seed = async () => {
           );
           if (!rows.length) continue; // already seeded
           const showId = rows[0].id;
-          await client.query(
-            `INSERT INTO seats (show_id, row_label, number, seat_number, category)
-             SELECT $1::int, * FROM unnest($2::text[], $3::int[], $4::text[], $5::text[])`,
-            [
-              showId,
-              LAYOUT.map((s) => s.row),
-              LAYOUT.map((s) => s.number),
-              LAYOUT.map((s) => s.seatNumber),
-              LAYOUT.map((s) => s.category),
-            ],
-          );
+          await insertSeats(client, showId, LAYOUT);
           const r = rand(showId);
           const fill = 0.1 + r() * 0.45;
           const sold = LAYOUT.filter(() => r() < fill);

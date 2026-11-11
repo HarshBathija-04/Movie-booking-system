@@ -1,7 +1,7 @@
 import { query, withTransaction } from "../configs/db.js";
 import { HttpError } from "../middleware/http.js";
 import { MOVIE_COLS, SEAT_COUNT_COLS, SHOW_COLS } from "../utils/columns.js";
-import createSeatLayout from "../utils/createSeatLayout.js";
+import createSeatLayout, { insertSeats } from "../utils/createSeatLayout.js";
 import { categoryPrices } from "../utils/pricing.js";
 
 const IST = "($1::date + $2::time) AT TIME ZONE 'Asia/Kolkata'";
@@ -45,18 +45,7 @@ export const createShow = async (req, res) => {
        VALUES ($3, $4, $5, ${IST}, $6, $7) RETURNING id`,
       [showDate, showTime, movieId, theaterName, screenName, ticketPrice, format],
     );
-    const layout = createSeatLayout().slice(0, totalSeats);
-    await client.query(
-      `INSERT INTO seats (show_id, row_label, number, seat_number, category)
-       SELECT $1::int, * FROM unnest($2::text[], $3::int[], $4::text[], $5::text[])`,
-      [
-        rows[0].id,
-        layout.map((s) => s.row),
-        layout.map((s) => s.number),
-        layout.map((s) => s.seatNumber),
-        layout.map((s) => s.category),
-      ],
-    );
+    await insertSeats(client, rows[0].id, createSeatLayout().slice(0, totalSeats));
     return rows[0];
   });
   res.status(201).json({ success: true, show });
