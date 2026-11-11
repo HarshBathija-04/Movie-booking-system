@@ -23,7 +23,9 @@ export default function AppShell() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0); // newer browsers return a Promise here, which must not leak out as a cleanup
+  }, [pathname]);
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === "Escape" && setOpen(false);
