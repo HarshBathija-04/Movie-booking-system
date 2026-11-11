@@ -14,7 +14,7 @@ const createSeatLayout = () =>
       number: index + 1,
       seatNumber: `${row}${index + 1}`,
       category,
-    }))
+    })),
   );
 
 export default createSeatLayout;

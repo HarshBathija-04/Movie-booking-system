@@ -1,8 +1,5 @@
 import express from "express";
-import {
-  getAllBookings,
-  getDashboardData,
-} from "../controllers/adminController.js";
+import { getAllBookings, getDashboardData } from "../controllers/adminController.js";
 import { adminOnly, protect } from "../middleware/auth.js";
 
 const router = express.Router();

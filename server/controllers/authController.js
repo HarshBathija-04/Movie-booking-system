@@ -1,86 +1,37 @@
 import bcrypt from "bcryptjs";
-import User from "../models/User.js";
-import generateToken from "../utils/generateToken.js";
+import { query } from "../configs/db.js";
+import { HttpError } from "../middleware/http.js";
+import { signToken } from "../middleware/auth.js";
 
-const sanitizeUser = (user) => ({
-  _id: user._id,
-  name: user.name,
-  email: user.email,
-  phone: user.phone,
-  role: user.role,
-  avatar: user.avatar,
-  createdAt: user.createdAt,
-});
+const USER_COLUMNS = `id, name, email, phone, role, created_at AS "createdAt"`;
 
 export const registerUser = async (req, res) => {
-  const { name, email, phone, password, role } = req.body;
+  const { name, email, phone, password } = req.body;
+  const hash = await bcrypt.hash(password, 10);
 
-  if (!name || !email || !phone || !password) {
-    return res
-      .status(400)
-      .json({ success: false, message: "All required fields must be provided" });
-  }
+  // Role is never taken from the request: new accounts are always customers.
+  const { rows } = await query(
+    `INSERT INTO users (name, email, phone, password_hash) VALUES ($1, $2, $3, $4)
+     ON CONFLICT DO NOTHING RETURNING ${USER_COLUMNS}`,
+    [name, email, phone, hash],
+  );
+  if (!rows[0]) throw new HttpError(409, "An account with this email or phone already exists", "conflict");
 
-  const existingUser = await User.findOne({
-    $or: [{ email: email.toLowerCase() }, { phone }],
-  });
-
-  if (existingUser) {
-    return res
-      .status(409)
-      .json({ success: false, message: "Email or phone already exists" });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const firstUser = (await User.countDocuments()) === 0;
-
-  const user = await User.create({
-    name,
-    email: email.toLowerCase(),
-    phone,
-    password: hashedPassword,
-    role: role === "admin" || firstUser ? "admin" : "user",
-  });
-
-  res.status(201).json({
-    success: true,
-    message: "Registration successful",
-    token: generateToken(user),
-    user: sanitizeUser(user),
-  });
+  res.status(201).json({ success: true, token: signToken(rows[0]), user: rows[0] });
 };
 
 export const loginUser = async (req, res) => {
   const { emailOrPhone, password } = req.body;
+  const { rows } = await query(
+    `SELECT ${USER_COLUMNS}, password_hash FROM users WHERE email = lower($1) OR phone = $1 LIMIT 1`,
+    [emailOrPhone],
+  );
+  const { password_hash: hash, ...user } = rows[0] || {};
 
-  if (!emailOrPhone || !password) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Credentials are required" });
+  if (!hash || !(await bcrypt.compare(password, hash))) {
+    throw new HttpError(401, "Incorrect email/phone or password", "invalid_credentials");
   }
-
-  const user = await User.findOne({
-    $or: [{ email: emailOrPhone.toLowerCase() }, { phone: emailOrPhone }],
-  });
-
-  if (!user) {
-    return res.status(401).json({ success: false, message: "Invalid credentials" });
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    return res.status(401).json({ success: false, message: "Invalid credentials" });
-  }
-
-  res.json({
-    success: true,
-    message: "Login successful",
-    token: generateToken(user),
-    user: sanitizeUser(user),
-  });
+  res.json({ success: true, token: signToken(user), user });
 };
 
-export const getProfile = async (req, res) => {
-  res.json({ success: true, user: sanitizeUser(req.user) });
-};
+export const getProfile = (req, res) => res.json({ success: true, user: req.user });
