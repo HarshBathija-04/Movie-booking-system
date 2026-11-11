@@ -1,52 +1,29 @@
-# Node.js
+# Dependencies & caches
 node_modules/
-npm-debug.log
-yarn-error.log
+.npm-cache/
+.npm/
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.env
-venv/
-env/
-.venv/
-build/
-develop-eggs/
+# Build output
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
+dist-ssr/
+build/
+coverage/
 
-# Checkpoints
-.ipynb_checkpoints
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Desktop.ini
+# Env / secrets
+.env
+.env.*
+!.env.example
 
 # Logs
 logs/
 *.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.local
