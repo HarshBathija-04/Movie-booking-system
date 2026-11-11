@@ -1,101 +1,70 @@
-import axios from "axios";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 
 const AppContext = createContext(null);
 
-export const AppProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
-  });
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(false);
+const readUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user")) || null;
+  } catch {
+    return null;
+  }
+};
 
-  const persistSession = (nextToken, nextUser) => {
-    setToken(nextToken);
+export const AppProvider = ({ children }) => {
+  const [user, setUser] = useState(() => (localStorage.getItem("token") ? readUser() : null));
+
+  const persistSession = useCallback((token, nextUser) => {
     setUser(nextUser);
-    if (nextToken) {
-      localStorage.setItem("token", nextToken);
+    if (token) {
+      localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(nextUser));
     } else {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     persistSession("", null);
-    toast.success("Logged out");
-  };
-
-  const fetchMovies = async (search = "") => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/movies", { params: { search } });
-      setMovies(data.movies || []);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load movies");
-    } finally {
-      setLoading(false);
-    }
-  };
+    toast.success("Signed out");
+  }, [persistSession]);
 
   const login = async (payload) => {
     const { data } = await api.post("/auth/login", payload);
     persistSession(data.token, data.user);
-    toast.success("Login successful");
+    toast.success(`Welcome back, ${data.user.name.split(" ")[0]}`);
     return data.user;
   };
 
   const register = async (payload) => {
     const { data } = await api.post("/auth/register", payload);
     persistSession(data.token, data.user);
-    toast.success("Registration successful");
+    toast.success("Account created - enjoy the show!");
     return data.user;
   };
 
-  const refreshProfile = async () => {
-    if (!token) return;
-
-    try {
-      const { data } = await api.get("/auth/me");
-      setUser(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        persistSession("", null);
-      }
-    }
-  };
-
+  // Refresh the cached profile once per load, and drop the session when the API says it expired.
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    if (!localStorage.getItem("token")) return undefined;
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+      })
+      .catch(() => {});
+    const onExpired = () => {
+      persistSession("", null);
+      toast.error("Your session expired. Please sign in again.");
+    };
+    window.addEventListener("auth:expired", onExpired);
+    return () => window.removeEventListener("auth:expired", onExpired);
+  }, [persistSession]);
 
-  useEffect(() => {
-    if (!token) return;
-    refreshProfile();
-  }, [token]);
-
-  return (
-    <AppContext.Provider
-      value={{
-        fetchMovies,
-        loading,
-        login,
-        logout,
-        movies,
-        register,
-        token,
-        user,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={{ user, login, logout, register }}>{children}</AppContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAppContext = () => useContext(AppContext);

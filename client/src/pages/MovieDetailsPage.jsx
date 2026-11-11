@@ -1,200 +1,224 @@
-import { CalendarDays, Clock3, Star, Tag, Users, Play, Info } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, CalendarX, Clock, Languages, PlayCircle, Star } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import api from "../services/api";
+import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
+import useFetch from "../hooks/useFetch";
+import { dayLabel, formatDay, formatMoney, formatRuntime, formatTime } from "../lib/format";
 
-const MovieDetailsPage = () => {
-  const { movieId } = useParams();
-  const [movie, setMovie] = useState(null);
-  const [shows, setShows] = useState([]);
+function Availability({ show }) {
+  const left = show.totalSeats - show.bookedSeatsCount;
+  const ratio = left / show.totalSeats;
+  const [tone, label] =
+    left === 0
+      ? ["text-velvet", "Sold out"]
+      : ratio < 0.25
+        ? ["text-velvet", `${left} left`]
+        : ratio < 0.5
+          ? ["text-marquee", "Filling fast"]
+          : ["text-teal", "Available"];
+  return <span className={`text-xs font-semibold ${tone}`}>{label}</span>;
+}
 
-  useEffect(() => {
-    const loadMovie = async () => {
-      try {
-        const { data } = await api.get(`/movies/${movieId}`);
-        setMovie(data.movie);
-        setShows(data.shows || []);
-      } catch (error) {
-        console.error("Failed to load movie", error);
-      }
-    };
+function Showtimes({ shows }) {
+  const days = useMemo(() => [...new Set(shows.map((s) => s.showDate))], [shows]);
+  const [picked, setPicked] = useState(null);
+  const day = picked && days.includes(picked) ? picked : days[0];
 
-    loadMovie();
-    window.scrollTo(0, 0);
-  }, [movieId]);
-
-  if (!movie) {
+  if (!shows.length) {
     return (
-      <div className="section-shell flex min-h-[60vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-t-transparent" />
-      </div>
+      <EmptyState
+        icon={CalendarX}
+        title="No upcoming shows"
+        action={
+          <Link to="/movies" className="btn-outline">
+            Browse other films
+          </Link>
+        }
+      >
+        This film has no scheduled screenings right now.
+      </EmptyState>
     );
   }
 
   return (
-    <div className="pb-20">
-      {/* Background Banner Hero */}
-      <div className="relative h-[400px] w-full overflow-hidden md:h-[600px]">
-        <img
-          src={movie.bannerUrl || movie.posterUrl}
-          className="h-full w-full object-cover"
-          alt="banner"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface via-transparent to-transparent" />
+    <div>
+      <div
+        role="group"
+        aria-label="Choose a date"
+        className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
+      >
+        {days.map((d) => (
+          <button
+            key={d}
+            type="button"
+            aria-pressed={d === day}
+            onClick={() => setPicked(d)}
+            className="flex min-w-20 shrink-0 flex-col items-center rounded-xl border border-line-strong px-4 py-2.5 transition hover:border-muted aria-pressed:border-marquee aria-pressed:bg-marquee/10"
+          >
+            <span className="text-xs font-semibold text-subtle">
+              {dayLabel(d).includes(" ") ? formatDay(d, { weekday: "short" }) : dayLabel(d)}
+            </span>
+            <span className="text-lg font-bold">{formatDay(d, { day: "numeric" })}</span>
+            <span className="text-xs text-muted">{formatDay(d, { month: "short" })}</span>
+          </button>
+        ))}
       </div>
-
-      <div className="section-shell -mt-32 relative z-10">
-        <div className="grid gap-10 lg:grid-cols-[340px_1fr]">
-          {/* Poster Card */}
-          <div className="hidden lg:block">
-            <div className="overflow-hidden rounded-[40px] border-4 border-white/5 shadow-2xl">
-              <img src={movie.posterUrl} alt={movie.title} className="w-full object-cover aspect-[3/4.5]" />
-            </div>
-            
-            <div className="mt-8 glass-card p-6">
-              <h4 className="font-title font-bold text-white mb-4 flex items-center gap-2">
-                <Info size={18} className="text-brand" />
-                Movie Info
-              </h4>
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted">Status</span>
-                  <span className="text-green-400 font-bold">Now Showing</span>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {shows
+          .filter((s) => s.showDate === day)
+          .map((s) => {
+            const soldOut = s.bookedSeatsCount >= s.totalSeats;
+            const body = (
+              <>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-2xl font-bold tabular-nums">{formatTime(s.showTime)}</span>
+                  <span className="tag">{s.format}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Language</span>
-                  <span>{movie.language}</span>
+                <div className="mt-2 flex items-center justify-between gap-2 text-sm text-muted">
+                  <span className="truncate">{s.screenName}</span>
+                  <span>from {formatMoney(s.ticketPrice)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Runtime</span>
-                  <span>{movie.durationMinutes} mins</span>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <Availability show={s} />
+                  <span className="h-1.5 w-24 overflow-hidden rounded-full bg-line" aria-hidden>
+                    <span
+                      className="block h-full bg-marquee/70"
+                      style={{ width: `${(s.bookedSeatsCount / s.totalSeats) * 100}%` }}
+                    />
+                  </span>
                 </div>
-              </div>
+              </>
+            );
+            return (
+              <li key={s.id}>
+                {soldOut ? (
+                  <div className="card block p-4 opacity-60" aria-disabled="true">
+                    {body}
+                  </div>
+                ) : (
+                  <Link
+                    to={`/book/${s.id}`}
+                    aria-label={`${formatTime(s.showTime)} in ${s.screenName}, ${s.format}`}
+                    className="card block p-4 transition hover:border-marquee/60 hover:bg-raised"
+                  >
+                    {body}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+      </ul>
+      <p className="mt-3 text-xs text-subtle">All times are in cinema local time (IST).</p>
+    </div>
+  );
+}
+
+export default function MovieDetailsPage() {
+  const { movieId } = useParams();
+  const { data, error, loading, reload } = useFetch(`/movies/${movieId}`);
+
+  if (error) {
+    return (
+      <div className="page py-16">
+        <ErrorState message={error} onRetry={reload} />
+      </div>
+    );
+  }
+
+  const movie = data?.movie;
+  return (
+    <article>
+      <div className="relative isolate overflow-hidden border-b border-line">
+        {movie && (movie.bannerUrl || movie.posterUrl) && (
+          <img
+            src={movie.bannerUrl || movie.posterUrl}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 -z-20 size-full object-cover opacity-30 blur-[2px]"
+          />
+        )}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-ink via-ink/85 to-ink/50" />
+        <div className="page py-8 md:py-14">
+          <Link to="/movies" className="btn-ghost btn-sm mb-6 -ml-3">
+            <ArrowLeft aria-hidden className="size-4" /> All films
+          </Link>
+          <div className="grid gap-8 sm:grid-cols-[180px_1fr] md:grid-cols-[240px_1fr]">
+            <div className="w-40 overflow-hidden rounded-xl border border-line-strong shadow-(--shadow-pop) sm:w-full">
+              {movie ? <Poster movie={movie} eager /> : <Skeleton className="aspect-[2/3] w-full" />}
             </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex flex-col pt-10 lg:pt-32">
-            <h1 className="font-display text-7xl uppercase tracking-tighter text-white md:text-9xl leading-[0.85]">
-              {movie.title}
-            </h1>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <div className="flex items-center gap-2 rounded-2xl bg-brand/10 border border-brand/20 px-4 py-2 text-brand-soft">
-                <Star size={18} fill="currentColor" />
-                <span className="font-bold text-lg">{movie.rating}</span>
-                <span className="text-xs opacity-60">/ 10</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl bg-white/5 border border-white/10 px-4 py-2">
-                <Clock3 size={18} />
-                <span className="font-bold">{movie.durationMinutes}m</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl bg-white/5 border border-white/10 px-4 py-2">
-                <CalendarDays size={18} />
-                <span className="font-bold">{new Date(movie.releaseDate).getFullYear()}</span>
-              </div>
-            </div>
-
-            <div className="mt-10 max-w-3xl">
-              <h3 className="font-title text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <Tag size={20} className="text-brand" />
-                Synopsis
-              </h3>
-              <p className="text-lg leading-relaxed text-muted">
-                {movie.description}
-              </p>
-            </div>
-
-            {movie.cast && movie.cast.length > 0 && (
-              <div className="mt-12">
-                 <h3 className="font-title text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <Users size={20} className="text-brand" />
-                  Starring Cast
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {movie.cast.map(person => (
-                    <div key={person} className="glass-card px-5 py-3 text-sm font-semibold">
-                      {person}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Timings Section */}
-            <div className="mt-20">
-              <div className="flex items-center justify-between gap-4 mb-8">
-                <h2 className="font-display text-5xl uppercase tracking-wider">
-                  Select <span className="text-brand">Showtime</span>
-                </h2>
-              </div>
-              
-              {shows.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {shows.map((show) => (
-                    <Link
-                      to={`/book/${show._id}`}
-                      key={show._id}
-                      className="glass-card group flex flex-col p-6 hover:border-brand/50 hover:bg-brand/[0.02]"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="rounded-lg bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-widest">
-                          {show.format}
-                        </span>
-                        <span className="text-brand-soft font-title font-bold text-xl">
-                          ₹{show.ticketPrice}
-                        </span>
-                      </div>
-                      
-                      <div className="flex-1">
-                        <p className="text-lg font-bold text-white group-hover:text-brand-soft leading-tight">
-                          {show.theaterName}
-                        </p>
-                        <p className="mt-1 text-sm text-muted">
-                          {show.screenName}
-                        </p>
-                        
-                        <div className="mt-6 flex flex-col gap-2">
-                           <div className="flex items-center gap-2 text-sm text-white/80">
-                            <CalendarDays size={16} className="text-brand" />
-                            {new Date(show.showDate).toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
-                          </div>
-                          <div className="flex items-center gap-2 text-2xl font-display tracking-widest text-brand-soft">
-                            <Clock3 size={20} className="text-brand" />
-                            {show.showTime}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 border-t border-white/5 pt-4">
-                        <div className="flex items-center justify-between text-xs font-bold text-muted uppercase">
-                          <span>Availability</span>
-                          <span className={show.totalSeats - show.bookedSeatsCount < 10 ? "text-red-400" : "text-green-400"}>
-                            {show.totalSeats - show.bookedSeatsCount} Seats Left
-                          </span>
-                        </div>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/5 text-[0]">
-                          <div 
-                            className="h-full bg-brand transition-all duration-1000" 
-                            style={{ width: `${(show.bookedSeatsCount / show.totalSeats) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+            <div className="min-w-0 self-end">
+              {loading || !movie ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-16 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-20 w-full" />
                 </div>
               ) : (
-                <div className="glass-card p-10 text-center text-muted">
-                  No shows currently available for this movie. Check back later!
-                </div>
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {movie.genres.map((g) => (
+                      <Link key={g} to={`/movies?genre=${encodeURIComponent(g)}`} className="tag hover:text-copy">
+                        {g}
+                      </Link>
+                    ))}
+                  </div>
+                  <h1 className="display mt-3 text-[clamp(2.75rem,7vw,5.5rem)]">{movie.title}</h1>
+                  <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
+                    <div className="inline-flex items-center gap-1.5">
+                      <dt className="sr-only">Rating</dt>
+                      <Star aria-hidden className="size-4 fill-marquee text-marquee" />
+                      <dd className="font-semibold text-copy">{Number(movie.rating).toFixed(1)}/10</dd>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5">
+                      <dt className="sr-only">Runtime</dt>
+                      <Clock aria-hidden className="size-4" />
+                      <dd>{formatRuntime(movie.durationMinutes)}</dd>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5">
+                      <dt className="sr-only">Language</dt>
+                      <Languages aria-hidden className="size-4" />
+                      <dd>{movie.language}</dd>
+                    </div>
+                    {movie.releaseDate && (
+                      <div>
+                        <dt className="sr-only">Released</dt>
+                        <dd>{movie.releaseDate.slice(0, 4)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  <p className="mt-5 max-w-3xl leading-relaxed text-muted">{movie.description}</p>
+                  {movie.cast.length > 0 && (
+                    <p className="mt-4 text-sm text-subtle">
+                      <span className="font-semibold text-muted">Starring </span>
+                      {movie.cast.join(", ")}
+                    </p>
+                  )}
+                  {movie.trailerUrl && (
+                    <a href={movie.trailerUrl} target="_blank" rel="noreferrer" className="btn-outline btn-sm mt-6">
+                      <PlayCircle aria-hidden className="size-4" /> Watch trailer
+                    </a>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
 
-export default MovieDetailsPage;
+      <section aria-labelledby="showtimes" className="page mt-10">
+        <h2 id="showtimes" className="display mb-5 text-4xl">
+          Showtimes
+        </h2>
+        {loading || !data ? (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-28" />
+            ))}
+          </div>
+        ) : (
+          <Showtimes shows={data.shows} />
+        )}
+      </section>
+    </article>
+  );
+}

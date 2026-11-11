@@ -1,113 +1,200 @@
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@200..800&family=Outfit:wght@100..900&display=swap");
 @import "tailwindcss";
 
+/*
+  CineVerse design tokens. Direction: "after the lights dim" - a near-black auditorium surface,
+  warm marquee amber as the single action colour, crimson for sold-out/danger, teal for success,
+  sky for the premium seat tier. Bebas Neue for marquee headlines, Manrope for everything else.
+*/
 @theme {
-  --font-display: "Bebas Neue", sans-serif;
-  --font-body: "Manrope", sans-serif;
-  --font-title: "Outfit", sans-serif;
-  
-  --color-brand: #f75c03;
-  --color-brand-soft: #ffb627;
-  --color-panel: #15151a;
-  --color-panel-soft: #202028;
-  --color-surface: #0a0a0f;
-  --color-copy: #f5f0e8;
-  --color-muted: #a4a1b2;
+  --font-display: "Bebas Neue", "Impact", sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
 
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-pulse-slow: pulse-slow 4s ease-in-out infinite;
+  --color-ink: #0c0b10;
+  --color-surface: #15131b;
+  --color-raised: #1e1b26;
+  --color-line: #2c2836;
+  --color-line-strong: #3d3849;
+  --color-copy: #f3eee6;
+  --color-muted: #aaa4b6;
+  --color-subtle: #8c8699;
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+  --color-marquee: #f5b942;
+  --color-marquee-strong: #ffcc66;
+  --color-marquee-ink: #1a1306;
+  --color-velvet: #ef5b6f;
+  --color-teal: #3ccbb4;
+  --color-sky: #74a9ff;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --shadow-pop: 0 24px 60px -20px rgb(0 0 0 / 0.75);
+  --shadow-glow: 0 0 0 1px rgb(245 185 66 / 0.35), 0 8px 30px -8px rgb(245 185 66 / 0.45);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm font-bold whitespace-nowrap transition duration-150 select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  border-radius: var(--radius-control);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-ink);
+    background-image: radial-gradient(1200px 500px at 50% -200px, rgb(245 185 66 / 0.08), transparent 70%);
+    color: var(--color-copy);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  ::selection {
+    background: rgb(245 185 66 / 0.35);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-marquee);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  img {
+    max-width: 100%;
+  }
+}
+
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
-  @keyframes pulse-slow {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.1; }
+  .card {
+    @apply border border-line bg-surface;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
   }
 
-  @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+  .eyebrow {
+    @apply text-xs font-bold tracking-[0.18em] text-marquee uppercase;
+  }
+  .display {
+    @apply font-display leading-[0.92] tracking-wide uppercase;
+  }
+
+  .btn-primary {
+    @apply btn bg-marquee text-marquee-ink hover:bg-marquee-strong;
+  }
+  .btn-outline {
+    @apply btn border border-line-strong bg-transparent text-copy hover:border-muted hover:bg-raised;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-raised hover:text-copy;
+  }
+  .btn-danger {
+    @apply btn border border-velvet/40 text-velvet hover:bg-velvet/10;
+  }
+  .btn-sm {
+    @apply min-h-9 px-3 text-xs;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-semibold text-copy;
+  }
+  .field {
+    @apply w-full border border-line-strong bg-ink px-3.5 py-2.5 text-sm text-copy transition placeholder:text-subtle hover:border-muted focus:border-marquee focus:ring-2 focus:ring-marquee/30 focus:outline-none;
+    border-radius: var(--radius-control);
+  }
+  .field-error {
+    @apply mt-1.5 text-xs font-medium text-velvet;
+  }
+
+  .chip {
+    @apply inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line-strong px-3.5 text-sm font-semibold text-muted transition hover:border-muted hover:text-copy;
+  }
+  .chip[aria-pressed="true"] {
+    @apply border-marquee bg-marquee/10 text-marquee;
+  }
+
+  .tag {
+    @apply inline-flex items-center gap-1 rounded-md bg-raised px-2 py-0.5 text-xs font-semibold text-muted;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-raised) 25%, var(--color-line) 50%, var(--color-raised) 75%);
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-lg;
+  }
+
+  /* Ticket stub: a card with semicircle notches punched out at the perforation line. */
+  .ticket {
+    --notch: 12px;
+    --cut: 68%;
+    @apply relative border border-line bg-surface;
+    border-radius: var(--radius-card);
+    mask:
+      radial-gradient(circle var(--notch) at var(--cut) 0, transparent 98%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--notch) at var(--cut) 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+  }
+  .perforation {
+    border-left: 2px dashed var(--color-line-strong);
   }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.8s ease-out forwards;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-* {
-  box-sizing: border-box;
-  scroll-behavior: smooth;
-}
-
-html,
-body,
-#root {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-body);
-  color: var(--color-copy);
-  background: 
-    radial-gradient(circle at 50% -20%, rgba(247, 92, 3, 0.15), transparent 60%),
-    radial-gradient(circle at 0% 100%, rgba(255, 182, 39, 0.08), transparent 40%),
-    #050507;
-  background-attachment: fixed;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.section-shell {
-  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
-}
-
-.glass-card {
-  @apply rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl transition-all duration-300;
-}
-
-.glass-card:hover {
-  @apply border-white/20 bg-white/[0.05] shadow-[0_20px_50px_rgba(0,0,0,0.5)];
-}
-
-.field {
-  @apply w-full rounded-2xl border border-white/10 bg-white/5 py-3.5 px-5 text-sm text-white outline-none transition-all duration-300 placeholder:text-muted/50 focus:border-brand focus:bg-white/[0.08] focus:ring-4 focus:ring-brand/15;
-}
-
-.field-with-icon {
-  @apply pl-14;
-}
-
-.btn-primary {
-  @apply inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-brand via-brand to-brand-soft px-8 py-4 font-title text-sm font-black uppercase tracking-wider text-black shadow-xl shadow-brand/20 transition-all duration-500 hover:scale-[1.02] hover:shadow-brand/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
-}
-
-.btn-secondary {
-  @apply inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-title text-sm font-black uppercase tracking-wider text-white backdrop-blur-md transition-all duration-500 hover:bg-white/10 hover:border-white/20 active:scale-[0.98];
-}
-
-.text-gradient {
-  @apply bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent;
-}
-
-.glow-brand {
-  @apply shadow-[0_0_20px_rgba(247,92,3,0.3)];
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-black/20;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-white/10 hover:bg-white/20;
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
 }

@@ -1,76 +1,132 @@
-import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import MovieCard from "../components/MovieCard";
-import { useAppContext } from "../context/AppContext";
+import Concierge from "../components/Concierge";
+import MovieCard, { MovieCardSkeleton, MovieGrid } from "../components/MovieCard";
+import { ErrorState, Poster, Skeleton } from "../components/ui";
+import useFetch from "../hooks/useFetch";
+import { dayLabel, formatRuntime, formatTime } from "../lib/format";
 
-const HomePage = () => {
-  const { movies } = useAppContext();
-  const featured = movies.slice(0, 4);
+function Hero({ movie }) {
+  const { data } = useFetch(movie ? `/movies/${movie.id}` : null);
+  const nextShows = data?.shows?.slice(0, 4) || [];
+  const backdrop = movie?.bannerUrl || movie?.posterUrl;
 
   return (
-    <div className="pb-20">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10">
-        {/* Background blobs for depth */}
-        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 animate-pulse-slow rounded-full bg-brand/10 blur-[100px]" />
-        <div className="pointer-events-none absolute top-1/2 -left-24 h-72 w-72 animate-pulse-slow rounded-full bg-brand-soft/5 blur-[80px]" />
+    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden border-b border-line">
+      {backdrop && (
+        <img
+          src={backdrop}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 -z-20 size-full object-cover object-top opacity-40"
+        />
+      )}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/90 to-ink/40" />
+      <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-ink to-transparent" />
 
-        <div className="section-shell relative z-10">
-          <div className="flex flex-col items-center py-12 text-center md:py-20 lg:items-start lg:text-left animate-fade-in-up">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/10 px-4 py-1.5 text-xs font-bold tracking-widest text-brand-soft uppercase">
-              <Sparkles size={14} />
-              Aditya University MCA Project 2026
+      <div className="page grid items-end gap-10 py-14 md:grid-cols-[1fr_auto] md:py-24">
+        <div className="max-w-2xl animate-rise">
+          <p className="eyebrow">Tonight&apos;s headliner</p>
+          {movie ? (
+            <>
+              <h1 id="hero-title" className="display mt-3 text-[clamp(3.25rem,9vw,6.5rem)]">
+                {movie.title}
+              </h1>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted">
+                <span className="inline-flex items-center gap-1 font-semibold text-copy">
+                  <Star aria-hidden className="size-4 fill-marquee text-marquee" /> {Number(movie.rating).toFixed(1)}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Clock aria-hidden className="size-4" /> {formatRuntime(movie.durationMinutes)}
+                </span>
+                <span>{movie.genres.join(" · ")}</span>
+                <span>{movie.language}</span>
+              </div>
+              <p className="mt-5 line-clamp-3 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
+                {movie.description}
+              </p>
+
+              {nextShows.length > 0 && (
+                <div className="mt-7">
+                  <p className="mb-2.5 text-xs font-bold tracking-widest text-subtle uppercase">Next showtimes</p>
+                  <ul className="flex flex-wrap gap-2">
+                    {nextShows.map((s) => (
+                      <li key={s.id}>
+                        <Link to={`/book/${s.id}`} className="chip">
+                          <span className="text-subtle">{dayLabel(s.showDate)}</span>
+                          <span className="text-copy">{formatTime(s.showTime)}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link to={`/movies/${movie.id}`} className="btn-primary">
+                  Book tickets <ArrowRight aria-hidden className="size-4" />
+                </Link>
+                <Link to="/movies" className="btn-outline">
+                  Browse all films
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <h1 id="hero-title" className="sr-only">
+                CineVerse
+              </h1>
+              <Skeleton className="h-20 w-4/5" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-16 w-full" />
             </div>
-            
-            <h1 className="max-w-4xl font-display text-7xl uppercase leading-[0.9] text-white md:text-[110px]">
-              Step into the <span className="text-brand">Magic</span> of <br className="hidden lg:block" />
-              the Big Screen.
-            </h1>
-            
-            <p className="mt-8 max-w-2xl text-lg leading-relaxed text-muted md:text-xl">
-              From the latest Bollywood blockbusters to Hollywood's most anticipated sequels, 
-              book your perfect seat in seconds. Experience cinema like never before.
-            </p>
-
-            <div className="mt-10 flex flex-wrap justify-center gap-4 lg:justify-start">
-              <Link to="/movies" className="btn-primary gap-2">
-                <Play size={20} fill="currentColor" />
-                Book Tickets Now
-              </Link>
-              <Link to="/my-bookings" className="btn-secondary">
-                My Booking History
-              </Link>
-            </div>
+          )}
+        </div>
+        {movie && (
+          <div className="hidden w-56 rotate-2 overflow-hidden rounded-xl border border-line-strong shadow-(--shadow-pop) md:block lg:w-64">
+            <Poster movie={movie} eager />
           </div>
-        </div>
-      </section>
-
-      {/* Now Showing Section */}
-      <section className="section-shell mt-20">
-        <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div className="space-y-2">
-            <h2 className="font-display text-5xl uppercase tracking-wider">
-              Now <span className="text-white/40">Showing</span>
-            </h2>
-            <div className="h-1 w-20 bg-brand rounded-full" />
-            <p className="max-w-md text-muted">
-              Check out the most popular movies currently playing at Aditya Cinemas.
-            </p>
-          </div>
-          <Link to="/movies" className="group flex items-center gap-2 font-title font-bold text-brand-soft transition-all hover:gap-3">
-            View All Movies
-            <ArrowRight size={20} />
-          </Link>
-        </div>
-        
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((movie) => (
-            <MovieCard key={movie._id} movie={movie} />
-          ))}
-        </div>
-      </section>
-    </div>
+        )}
+      </div>
+    </section>
   );
-};
+}
 
-export default HomePage;
+export default function HomePage() {
+  const { data, error, loading, reload } = useFetch("/movies");
+  const movies = data?.movies || [];
+  const headliner = movies.find((m) => m.bannerUrl && m.upcomingShows > 0) || movies[0];
+  const nowShowing = movies.filter((m) => m.upcomingShows > 0).slice(0, 10);
+
+  return (
+    <>
+      <Hero movie={headliner} />
+
+      <div className="page mt-12 space-y-16">
+        <Concierge />
+
+        <section aria-labelledby="now-showing">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">In cinemas</p>
+              <h2 id="now-showing" className="display mt-1 text-4xl sm:text-5xl">
+                Now showing
+              </h2>
+            </div>
+            <Link to="/movies" className="btn-ghost btn-sm shrink-0">
+              See all <ArrowRight aria-hidden className="size-4" />
+            </Link>
+          </div>
+          {error ? (
+            <ErrorState message={error} onRetry={reload} />
+          ) : (
+            <MovieGrid>
+              {loading
+                ? Array.from({ length: 10 }, (_, i) => <MovieCardSkeleton key={i} />)
+                : nowShowing.map((m, i) => <MovieCard key={m.id} movie={m} eager={i < 5} />)}
+            </MovieGrid>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}

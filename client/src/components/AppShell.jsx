@@ -1,100 +1,144 @@
-import { Film, LogOut, Ticket, User as UserIcon } from "lucide-react";
-import { NavLink, Link, Outlet } from "react-router-dom";
+import { LayoutDashboard, LogOut, Menu, Ticket, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { WakingBanner } from "./ui";
 
-const AppShell = () => {
-  const { logout, user } = useAppContext();
+const navClass = ({ isActive }) =>
+  `rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive ? "text-marquee" : "text-muted hover:text-copy"}`;
 
-  const activeClass = ({ isActive }) => 
-    `transition-all duration-300 font-bold tracking-tight ${
-      isActive ? 'text-brand-soft' : 'text-white/60 hover:text-white'
-    }`;
+export const Logo = () => (
+  <Link to="/" className="flex items-center gap-2.5" aria-label="CineVerse home">
+    <span className="grid size-9 place-items-center rounded-lg bg-marquee text-marquee-ink">
+      <Ticket aria-hidden className="size-5 -rotate-12" strokeWidth={2.5} />
+    </span>
+    <span className="display text-2xl tracking-[0.08em]">
+      Cine<span className="text-marquee">Verse</span>
+    </span>
+  </Link>
+);
+
+export default function AppShell() {
+  const { user, logout } = useAppContext();
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => window.scrollTo(0, 0), [pathname]);
+
+  const links = (
+    <>
+      <NavLink to="/movies" className={navClass}>
+        Movies
+      </NavLink>
+      <NavLink to="/my-bookings" className={navClass}>
+        My bookings
+      </NavLink>
+      {user?.role === "admin" && (
+        <NavLink to="/admin" className={navClass}>
+          Admin
+        </NavLink>
+      )}
+    </>
+  );
 
   return (
-    <div className="flex min-h-screen flex-col selection:bg-brand/30 selection:text-brand-soft">
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#050507]/60 backdrop-blur-2xl">
-        <div className="section-shell flex items-center justify-between gap-4 py-3 md:py-4">
-          <NavLink to="/" className="group flex items-center gap-3">
-            <div className="relative overflow-hidden rounded-2xl bg-brand/10 p-2.5 text-brand shadow-lg shadow-brand/10 group-hover:scale-110 transition-transform">
-              <Film size={26} />
-              <div className="absolute inset-0 bg-brand/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-display text-2xl leading-none uppercase tracking-[0.2em] text-white">
-                Cine<span className="text-brand">Verse</span>
-              </span>
-              <span className="text-[10px] font-bold tracking-[0.3em] text-white/40 uppercase">Aditya Cinemas</span>
-            </div>
-          </NavLink>
-
-          <nav className="hidden items-center gap-10 text-sm font-title uppercase tracking-widest md:flex">
-            <NavLink to="/" className={activeClass}>Home</NavLink>
-            <NavLink to="/movies" className={activeClass}>Movies</NavLink>
-            <NavLink to="/my-bookings" className={activeClass}>My Bookings</NavLink>
-            {user?.role === "admin" && (
-              <NavLink to="/admin/dashboard" className={activeClass}>Admin Panel</NavLink>
-            )}
+    <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="btn-primary sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60]"
+      >
+        Skip to content
+      </a>
+      <header className="no-print sticky top-0 z-40 border-b border-line/80 bg-ink/80 backdrop-blur-lg">
+        <div className="page flex h-16 items-center justify-between gap-4">
+          <Logo />
+          <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+            {links}
           </nav>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {user ? (
-              <div className="flex items-center gap-4 pl-4 border-l border-white/10">
-                <div className="hidden text-right lg:block">
-                  <p className="text-xs font-black uppercase tracking-tighter text-brand-soft">{user.role}</p>
-                  <p className="text-sm font-bold text-white">{user.name}</p>
-                </div>
-                <div className="flex gap-2">
-                   <button 
-                    onClick={logout}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-muted hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-all duration-300" 
-                    title="Logout"
-                  >
-                    <LogOut size={20} />
-                  </button>
-                </div>
+              <div className="hidden items-center gap-3 md:flex">
+                <span className="text-sm text-muted">
+                  Hi, <span className="font-semibold text-copy">{user.name.split(" ")[0]}</span>
+                </span>
+                <button type="button" onClick={logout} className="btn-ghost btn-sm" aria-label="Sign out">
+                  <LogOut aria-hidden className="size-4" /> Sign out
+                </button>
               </div>
             ) : (
-              <NavLink to="/auth" className="btn-primary group py-2.5 px-6">
-                <Ticket size={18} className="mr-2 group-hover:rotate-12 transition-transform" />
-                Sign In
-              </NavLink>
+              <Link to="/auth" className="btn-primary btn-sm hidden md:inline-flex">
+                Sign in
+              </Link>
             )}
+            <button
+              type="button"
+              className="btn-ghost btn-sm md:hidden"
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              aria-label={open ? "Close menu" : "Open menu"}
+              onClick={() => setOpen((o) => !o)}
+            >
+              {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
           </div>
         </div>
+        {open && (
+          <nav
+            id="mobile-nav"
+            aria-label="Mobile"
+            className="page flex flex-col gap-1 border-t border-line pt-2 pb-4 md:hidden"
+            onClick={(e) => e.target.closest("a, button") && setOpen(false)}
+          >
+            {links}
+            {user ? (
+              <button type="button" onClick={logout} className="btn-outline mt-2 w-full">
+                <LogOut aria-hidden className="size-4" /> Sign out
+              </button>
+            ) : (
+              <Link to="/auth" className="btn-primary mt-2 w-full">
+                Sign in
+              </Link>
+            )}
+          </nav>
+        )}
       </header>
 
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         <Outlet />
       </main>
 
-      <footer className="border-t border-white/5 bg-[#050507] py-12">
-        <div className="section-shell">
-          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
-            <div className="flex flex-col items-center gap-4 md:items-start md:gap-2">
-                <div className="flex items-center gap-2">
-                   <Film size={20} className="text-brand" />
-                   <span className="font-display text-xl uppercase tracking-widest">CineVerse</span>
-                </div>
-                <p className="text-xs text-muted max-w-xs text-center md:text-left">
-                  The ultimate cinema booking experience. Built for Aditya University MCA Graduate Project 2026.
-                </p>
-            </div>
-            
-            <div className="flex flex-col items-center gap-6 md:items-end md:gap-4">
-               <div className="flex gap-6 text-xs font-bold uppercase tracking-widest text-muted">
-                  <Link to="/" className="hover:text-brand transition-colors">Privacy</Link>
-                  <Link to="/" className="hover:text-brand transition-colors">Terms</Link>
-                  <Link to="/" className="hover:text-brand transition-colors">Contact</Link>
-               </div>
-               <p className="text-[10px] font-bold text-brand uppercase tracking-tighter">
-                MCA | Department of Computer Applications © 2026
-               </p>
-            </div>
+      <footer className="no-print mt-20 border-t border-line">
+        <div className="page flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <Logo />
+            <p className="max-w-sm text-sm text-subtle">
+              Pick a film, pick your seats, get a QR ticket. Payments are simulated for this demo.
+            </p>
           </div>
+          <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+            <Link to="/movies" className="hover:text-copy">
+              Now showing
+            </Link>
+            <Link to="/my-bookings" className="hover:text-copy">
+              My bookings
+            </Link>
+            {user?.role === "admin" && (
+              <Link to="/admin" className="inline-flex items-center gap-1 hover:text-copy">
+                <LayoutDashboard aria-hidden className="size-4" /> Admin
+              </Link>
+            )}
+            <a
+              href="https://github.com/HarshBathija-04/Movie-booking-system"
+              className="hover:text-copy"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Source on GitHub
+            </a>
+          </nav>
         </div>
       </footer>
+      <WakingBanner />
     </div>
   );
-};
-
-export default AppShell;
+}

@@ -1,177 +1,142 @@
+import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { Lock, Mail, Phone, User, ArrowRight, ShieldCheck } from "lucide-react";
+import { errorMessage } from "../services/api";
 
-const initialForm = {
-  name: "",
-  email: "",
-  phone: "",
-  password: "",
-  emailOrPhone: "",
+const DEMO = { emailOrPhone: "demo@cineverse.app", password: "demo1234" };
+
+const FIELDS = {
+  register: [
+    { name: "name", label: "Full name", autoComplete: "name" },
+    { name: "email", label: "Email", type: "email", autoComplete: "email" },
+    { name: "phone", label: "Phone", type: "tel", autoComplete: "tel", hint: "10-15 digits" },
+    {
+      name: "password",
+      label: "Password",
+      type: "password",
+      autoComplete: "new-password",
+      hint: "At least 8 characters",
+    },
+  ],
+  login: [
+    { name: "emailOrPhone", label: "Email or phone", autoComplete: "username" },
+    { name: "password", label: "Password", type: "password", autoComplete: "current-password" },
+  ],
 };
 
-const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [form, setForm] = useState(initialForm);
-  const [submitting, setSubmitting] = useState(false);
-  const { login, register } = useAppContext();
+export default function AuthPage() {
+  const { user, login, register } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({});
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const target = location.state?.from || "/";
 
-  const redirectTarget = location.state?.from || "/";
+  if (user) return <Navigate to={target} replace />;
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const submit = async (payload) => {
     setSubmitting(true);
-
+    setErrors({});
     try {
-      const user = isLogin
-        ? await login({
-            emailOrPhone: form.emailOrPhone,
-            password: form.password,
-          })
-        : await register({
-            name: form.name,
-            email: form.email,
-            phone: form.phone,
-            password: form.password,
-          });
-
-      navigate(user.role === "admin" ? "/admin/dashboard" : redirectTarget);
-    } catch (e) {
-      console.error(e);
+      const u = mode === "login" ? await login(payload) : await register(payload);
+      navigate(u.role === "admin" && target === "/" ? "/admin" : target, { replace: true });
+    } catch (err) {
+      const details = err.response?.data?.error?.details;
+      if (details) setErrors(Object.fromEntries(details.map((d) => [d.path, d.message])));
+      toast.error(errorMessage(err, "Couldn't sign you in"));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const switchMode = () => {
+    setMode((m) => (m === "login" ? "register" : "login"));
+    setErrors({});
+  };
+
   return (
-    <div className="section-shell flex min-h-[calc(100vh-100px)] items-center justify-center py-12">
-      <div className="grid w-full max-w-5xl gap-12 lg:grid-cols-[1fr_420px]">
-        {/* Left Side: Branding/Info */}
-        <div className="hidden flex-col justify-center lg:flex">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-brand/10 border border-brand/20 px-4 py-1.5 text-xs font-bold tracking-widest text-brand-soft uppercase">
-            <ShieldCheck size={14} />
-            Secure Authentication
-          </div>
-          <h1 className="font-display text-8xl uppercase tracking-tighter leading-[0.85] text-white">
-            Access the <br /> <span className="text-brand">Verse.</span>
-          </h1>
-          <p className="mt-8 max-w-md text-xl leading-relaxed text-muted">
-            {isLogin 
-              ? "Sign in to manage your bookings, discover new releases, and get personalized recommendations."
-              : "Join our community of movie lovers. Create an account to start booking seats for the biggest blockbusters."}
-          </p>
-          
-          <div className="mt-12 space-y-6">
-            <div className="flex items-start gap-4">
-               <div className="rounded-xl bg-white/5 p-3 border border-white/10 text-brand">
-                  <ShieldCheck size={24} />
-               </div>
-               <div>
-                  <h4 className="font-title font-bold text-white">Security First</h4>
-                  <p className="text-sm text-muted">Your password is encrypted and never stored in plain text.</p>
-               </div>
-            </div>
-          </div>
-        </div>
+    <div className="page grid min-h-[calc(100dvh-4rem)] items-center gap-12 py-12 lg:grid-cols-2">
+      <div className="hidden lg:block">
+        <p className="eyebrow">Members get</p>
+        <h1 className="display mt-2 text-7xl">
+          Your seat is
+          <br />
+          <span className="text-marquee">waiting.</span>
+        </h1>
+        <ul className="mt-8 space-y-3 text-muted">
+          <li>Pick exact seats on a live seat map that locks the moment you pay.</li>
+          <li>QR tickets for every booking, saved to your wallet.</li>
+          <li>An AI concierge that picks tonight&apos;s film for you.</li>
+        </ul>
+      </div>
 
-        {/* Right Side: Form */}
-        <div className="glass-card flex flex-col p-8 md:p-10">
-          <div className="mb-8">
-            <h2 className="font-display text-4xl uppercase tracking-wider">
-              {isLogin ? "Welcome Back" : "Register Now"}
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              {isLogin ? "Sign in to your CineVerse account" : "Get started with your free account"}
-            </p>
-          </div>
+      <div className="card mx-auto w-full max-w-md p-6 sm:p-8">
+        <h2 className="display text-4xl">{mode === "login" ? "Sign in" : "Create account"}</h2>
+        <p className="mt-1 text-sm text-muted">
+          {mode === "login" ? "Welcome back. Your tickets are right where you left them." : "It takes 20 seconds."}
+        </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div className="relative">
-                  <User className="absolute top-1/2 left-5 -translate-y-1/2 text-muted" size={18} />
-                  <input
-                    className="field field-with-icon"
-                    placeholder="Full name"
-                    value={form.name}
-                    onChange={(event) => setForm({ ...form, name: event.target.value })}
-                    required
-                  />
-                </div>
-                <div className="relative">
-                  <Mail className="absolute top-1/2 left-5 -translate-y-1/2 text-muted" size={18} />
-                  <input
-                    className="field field-with-icon"
-                    placeholder="Email address"
-                    type="email"
-                    value={form.email}
-                    onChange={(event) => setForm({ ...form, email: event.target.value })}
-                    required
-                  />
-                </div>
-                <div className="relative">
-                  <Phone className="absolute top-1/2 left-5 -translate-y-1/2 text-muted" size={18} />
-                  <input
-                    className="field field-with-icon"
-                    placeholder="Phone number"
-                    value={form.phone}
-                    onChange={(event) => setForm({ ...form, phone: event.target.value })}
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {isLogin && (
-              <div className="relative">
-                <Mail className="absolute top-1/2 left-5 -translate-y-1/2 text-muted" size={18} />
-                <input
-                  className="field field-with-icon"
-                  placeholder="Email or phone"
-                  value={form.emailOrPhone}
-                  onChange={(event) => setForm({ ...form, emailOrPhone: event.target.value })}
-                  required
-                />
-              </div>
-            )}
-
-            <div className="relative">
-              <Lock className="absolute top-1/2 left-5 -translate-y-1/2 text-muted" size={18} />
+        <form
+          className="mt-6 space-y-4"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit(Object.fromEntries(FIELDS[mode].map((f) => [f.name, form[f.name] || ""])));
+          }}
+        >
+          {FIELDS[mode].map((f) => (
+            <div key={f.name}>
+              <label htmlFor={f.name} className="label">
+                {f.label}
+              </label>
               <input
-                className="field field-with-icon"
-                placeholder="Password"
-                type="password"
-                value={form.password}
-                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                id={f.name}
+                name={f.name}
+                type={f.type || "text"}
+                autoComplete={f.autoComplete}
                 required
+                className="field"
+                value={form[f.name] || ""}
+                aria-invalid={Boolean(errors[f.name])}
+                aria-describedby={errors[f.name] ? `${f.name}-error` : f.hint ? `${f.name}-hint` : undefined}
+                onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
               />
+              {errors[f.name] ? (
+                <p id={`${f.name}-error`} className="field-error">
+                  {errors[f.name]}
+                </p>
+              ) : (
+                f.hint && (
+                  <p id={`${f.name}-hint`} className="mt-1.5 text-xs text-subtle">
+                    {f.hint}
+                  </p>
+                )
+              )}
             </div>
+          ))}
+          <button type="submit" className="btn-primary w-full" disabled={submitting}>
+            {submitting && <Loader2 aria-hidden className="size-4 animate-spin" />}
+            {mode === "login" ? "Sign in" : "Create account"}
+          </button>
+        </form>
 
-            <button disabled={submitting} className="btn-primary w-full mt-2">
-              {submitting ? "Processing..." : isLogin ? "Login Account" : "Create Account"}
-              <ArrowRight size={18} className="ml-2" />
-            </button>
-          </form>
+        {mode === "login" && (
+          <button type="button" className="btn-outline mt-3 w-full" disabled={submitting} onClick={() => submit(DEMO)}>
+            <Sparkles aria-hidden className="size-4 text-marquee" /> Continue with the demo account
+          </button>
+        )}
 
-          <div className="mt-10 pt-6 border-t border-white/5 text-center">
-            <p className="text-sm text-muted">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                className="ml-2 font-bold text-brand-soft hover:underline"
-                onClick={() => setIsLogin((prev) => !prev)}
-              >
-                {isLogin ? "Register here" : "Login instead"}
-              </button>
-            </p>
-          </div>
-        </div>
+        <p className="mt-6 border-t border-line pt-5 text-center text-sm text-muted">
+          {mode === "login" ? "New to CineVerse?" : "Already have an account?"}{" "}
+          <button type="button" onClick={switchMode} className="font-semibold text-marquee hover:underline">
+            {mode === "login" ? "Create an account" : "Sign in"}
+          </button>
+        </p>
       </div>
     </div>
   );
-};
-
-export default AuthPage;
+}

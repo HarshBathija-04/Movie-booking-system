@@ -1,53 +1,47 @@
-import { Clock3, Star, Ticket } from "lucide-react";
+import { Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatMoney, formatRuntime } from "../lib/format";
+import { Poster, Skeleton } from "./ui";
 
-const MovieCard = ({ movie }) => (
-  <Link
-    to={`/movies/${movie._id}`}
-    className="group flex flex-col overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.02] transition-all duration-500 hover:-translate-y-2 hover:border-brand/40 hover:bg-white/[0.05] hover:shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
-  >
-    <div className="relative aspect-[3/4.2] overflow-hidden">
-      <img
-        src={movie.posterUrl}
-        alt={movie.title}
-        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-      
-      <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-        <div className="btn-primary w-full py-2.5 text-xs shadow-none">
-          <Ticket size={14} className="mr-2" />
-          Quick Book
-        </div>
+export default function MovieCard({ movie, eager }) {
+  const bookable = movie.upcomingShows > 0;
+  return (
+    <Link to={`/movies/${movie.id}`} className="group block focus-visible:outline-offset-4">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-raised transition duration-300 group-hover:-translate-y-1 group-hover:border-line-strong group-hover:shadow-(--shadow-pop)">
+        <Poster movie={movie} eager={eager} className="transition duration-500 group-hover:scale-[1.03]" />
+        <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-md bg-ink/85 px-2 py-1 text-xs font-bold backdrop-blur">
+          <Star aria-hidden className="size-3.5 fill-marquee text-marquee" />
+          {Number(movie.rating).toFixed(1)}
+        </span>
+        {!bookable && (
+          <span className="absolute inset-x-0 bottom-0 bg-ink/85 py-1.5 text-center text-xs font-bold text-muted backdrop-blur">
+            No upcoming shows
+          </span>
+        )}
       </div>
-
-      <div className="absolute top-4 right-4 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 text-xs font-bold text-brand-soft">
-        <div className="flex items-center gap-1">
-          <Star size={12} fill="currentColor" />
-          {movie.rating}
-        </div>
-      </div>
-    </div>
-    
-    <div className="flex flex-1 flex-col justify-between p-6">
-      <div>
-        <h3 className="line-clamp-1 font-title text-xl font-bold tracking-tight text-white group-hover:text-brand-soft transition-colors text-gradient">
-          {movie.title}
-        </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">
-          {movie.description}
+      <div className="mt-3 space-y-1 px-0.5">
+        <h3 className="line-clamp-1 font-bold group-hover:text-marquee">{movie.title}</h3>
+        <p className="line-clamp-1 text-sm text-muted">
+          {movie.genres.slice(0, 2).join(" · ")} · {formatRuntime(movie.durationMinutes)}
         </p>
+        {bookable && movie.priceFrom != null && (
+          <p className="text-sm text-subtle">
+            From <span className="font-semibold text-copy">{formatMoney(movie.priceFrom)}</span>
+          </p>
+        )}
       </div>
-      
-      <div className="mt-5 flex items-center justify-between border-t border-white/5 pt-4 text-[11px] font-bold tracking-wider text-muted uppercase">
-        <span className="truncate max-w-[120px]">{movie.genre?.[0]} • {movie.language}</span>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Clock3 size={13} className="text-brand" />
-          {movie.durationMinutes}m
-        </div>
-      </div>
-    </div>
-  </Link>
+    </Link>
+  );
+}
+
+export const MovieCardSkeleton = () => (
+  <div>
+    <Skeleton className="aspect-[2/3] w-full rounded-xl" />
+    <Skeleton className="mt-3 h-4 w-3/4" />
+    <Skeleton className="mt-2 h-3 w-1/2" />
+  </div>
 );
 
-export default MovieCard;
+export const MovieGrid = ({ children }) => (
+  <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{children}</div>
+);

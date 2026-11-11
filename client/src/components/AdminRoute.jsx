@@ -1,18 +1,29 @@
-import { Navigate } from "react-router-dom";
+import { ShieldAlert } from "lucide-react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { EmptyState } from "./ui";
 
-const AdminRoute = ({ children }) => {
+export default function AdminRoute({ children }) {
   const { user } = useAppContext();
+  const location = useLocation();
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
+  if (!user) return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
   if (user.role !== "admin") {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="page py-20">
+        <EmptyState
+          icon={ShieldAlert}
+          title="Staff only"
+          action={
+            <Link to="/" className="btn-outline">
+              Back to the lobby
+            </Link>
+          }
+        >
+          The admin console is limited to cinema staff accounts.
+        </EmptyState>
+      </div>
+    );
   }
-
   return children;
-};
-
-export default AdminRoute;
+}

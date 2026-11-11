@@ -1,63 +1,34 @@
-import { BarChart3, CalendarClock, Clapperboard, ReceiptText, ArrowLeft, ShieldCheck } from "lucide-react";
-import { NavLink, Link, Outlet } from "react-router-dom";
+import { BarChart3, CalendarClock, Clapperboard, ReceiptText } from "lucide-react";
+import { NavLink, Outlet } from "react-router-dom";
 
 const links = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
-  { to: "/admin/movies", label: "Manage Movies", icon: Clapperboard },
-  { to: "/admin/shows", label: "Show Schedules", icon: CalendarClock },
-  { to: "/admin/bookings", label: "Sales & Bookings", icon: ReceiptText },
+  { to: "dashboard", label: "Overview", icon: BarChart3 },
+  { to: "movies", label: "Films", icon: Clapperboard },
+  { to: "shows", label: "Showtimes", icon: CalendarClock },
+  { to: "bookings", label: "Bookings", icon: ReceiptText },
 ];
 
-const AdminLayout = () => {
-  const activeClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-2xl px-5 py-4 text-sm font-bold transition-all duration-300 ${
-      isActive 
-        ? "bg-brand text-black shadow-lg shadow-brand/20 translate-x-1" 
-        : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-    }`;
+const linkClass = ({ isActive }) =>
+  `inline-flex min-h-10 shrink-0 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold transition ${
+    isActive ? "bg-marquee/10 text-marquee" : "text-muted hover:bg-raised hover:text-copy"
+  }`;
 
+export default function AdminLayout() {
   return (
-    <div className="section-shell grid gap-10 py-10 lg:grid-cols-[280px_1fr]">
-      {/* Sidebar */}
-      <aside className="space-y-8">
-        <div className="flex flex-col gap-2 px-1">
-           <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-brand/10 p-2 text-brand">
-                 <ShieldCheck size={24} />
-              </div>
-              <h2 className="font-display text-4xl uppercase tracking-widest text-white">Central</h2>
-           </div>
-           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted pl-1">Admin Management</p>
-        </div>
-
-        <nav className="flex flex-col gap-3">
+    <div className="page grid gap-8 py-8 lg:grid-cols-[200px_1fr]">
+      <aside>
+        <p className="eyebrow mb-3 px-3">Admin console</p>
+        <nav aria-label="Admin" className="-mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:px-0">
           {links.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className={activeClass}>
-              <Icon size={20} />
-              {label}
+            <NavLink key={to} to={to} className={linkClass}>
+              <Icon aria-hidden className="size-4" /> {label}
             </NavLink>
           ))}
         </nav>
-
-        <div className="pt-8 border-t border-white/5">
-           <Link 
-            to="/" 
-            className="flex items-center gap-3 rounded-2xl px-5 py-4 text-sm font-bold bg-white/5 text-muted hover:text-white hover:bg-white/10 transition-all border border-white/5"
-           >
-             <ArrowLeft size={20} />
-             Return to Marketplace
-           </Link>
-        </div>
       </aside>
-
-      {/* Main Content Area */}
-      <main>
-        <div className="glass-card min-h-[70vh] p-8 md:p-10 bg-white/[0.02] border-white/5">
-          <Outlet />
-        </div>
-      </main>
+      <div className="min-w-0">
+        <Outlet />
+      </div>
     </div>
   );
-};
-
-export default AdminLayout;
+}

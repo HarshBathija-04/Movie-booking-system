@@ -1,114 +1,102 @@
-import { useEffect, useState } from "react";
-import api from "../../services/api";
-import { ReceiptText, Search, Download } from "lucide-react";
+import { ReceiptText, Search } from "lucide-react";
+import { useState } from "react";
+import { EmptyState, ErrorState, Skeleton } from "../../components/ui";
+import useFetch from "../../hooks/useFetch";
+import { formatDay, formatMoney, formatTime } from "../../lib/format";
 
-const AdminBookingsPage = () => {
-  const [bookings, setBookings] = useState([]);
-  const [search, setSearch] = useState("");
+export function BookingsTable({ bookings }) {
+  return (
+    <div className="card overflow-x-auto">
+      <table className="w-full min-w-[640px] text-left text-sm">
+        <thead className="border-b border-line text-xs tracking-wider text-subtle uppercase">
+          <tr>
+            <th scope="col" className="px-4 py-3 font-semibold">
+              Code
+            </th>
+            <th scope="col" className="px-4 py-3 font-semibold">
+              Customer
+            </th>
+            <th scope="col" className="px-4 py-3 font-semibold">
+              Film &amp; show
+            </th>
+            <th scope="col" className="px-4 py-3 font-semibold">
+              Seats
+            </th>
+            <th scope="col" className="px-4 py-3 text-right font-semibold">
+              Amount
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {bookings.map((b) => (
+            <tr key={b.id} className="hover:bg-raised/60">
+              <td className="px-4 py-3 font-mono text-xs text-muted">{b.bookingCode}</td>
+              <td className="px-4 py-3">
+                <p className="font-semibold">{b.user.name}</p>
+                <p className="text-xs text-subtle">{b.user.email}</p>
+              </td>
+              <td className="px-4 py-3">
+                <p className="font-semibold">{b.movie.title}</p>
+                <p className="text-xs text-subtle">
+                  {formatDay(b.show.showDate)} · {formatTime(b.show.showTime)} · {b.show.screenName}
+                </p>
+              </td>
+              <td className="max-w-48 truncate px-4 py-3 text-muted" title={b.seats.join(", ")}>
+                {b.seatCount} · {b.seats.join(", ")}
+              </td>
+              <td className="px-4 py-3 text-right font-semibold tabular-nums">{formatMoney(b.amount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const loadBookings = async () => {
-      try {
-        const { data } = await api.get("/admin/bookings");
-        setBookings(data.bookings || []);
-      } catch (error) {
-        console.error("Failed to load bookings", error);
-      }
-    };
-
-    loadBookings();
-  }, []);
-
-  const filteredBookings = bookings.filter(b => 
-    b.bookingId.toLowerCase().includes(search.toLowerCase()) ||
-    b.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    b.movie?.title?.toLowerCase().includes(search.toLowerCase())
+export default function AdminBookingsPage() {
+  const { data, error, loading, reload } = useFetch("/admin/bookings");
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  const bookings = (data?.bookings || []).filter(
+    (b) =>
+      !needle ||
+      [b.bookingCode, b.user.name, b.user.email, b.movie.title].some((v) => v.toLowerCase().includes(needle)),
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-         <div>
-            <h1 className="font-display text-5xl uppercase tracking-tighter">
-              Sales <span className="text-brand">& Bookings</span>
-            </h1>
-            <p className="text-muted">Monitor all transaction history and seat reservations.</p>
-         </div>
-         
-         <div className="flex gap-3">
-            <div className="relative">
-               <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-muted" size={16} />
-               <input 
-                  className="field py-2 text-xs pl-10 h-10 min-w-[240px]" 
-                  placeholder="Search ID, User, or Movie..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-            </div>
-            <button className="flex h-10 items-center justify-center rounded-xl bg-white/5 px-4 text-xs font-bold text-muted border border-white/5 hover:text-white transition-all">
-               <Download size={16} className="mr-2" />
-               Export
-            </button>
-         </div>
-      </div>
-
-      <div className="glass-card shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-muted">
-                <th className="px-6 py-5">Order ID</th>
-                <th className="px-6 py-5">Customer</th>
-                <th className="px-6 py-5">Movie</th>
-                <th className="px-6 py-5">Show Details</th>
-                <th className="px-6 py-5">Seats</th>
-                <th className="px-6 py-5 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => (
-                  <tr key={booking._id} className="text-sm hover:bg-white/[0.02] transition-colors group">
-                    <td className="px-6 py-5">
-                       <span className="font-title font-bold text-white group-hover:text-brand-soft transition-colors">#{booking.bookingId}</span>
-                       <p className="text-[10px] text-muted">{new Date(booking.createdAt || Date.now()).toLocaleDateString()}</p>
-                    </td>
-                    <td className="px-6 py-5 font-semibold text-white/80">{booking.user?.name}</td>
-                    <td className="px-6 py-5 font-bold text-white">{booking.movie?.title}</td>
-                    <td className="px-6 py-5">
-                      <div className="text-xs">
-                        <p className="text-white/80 font-bold">{booking.show?.showTime}</p>
-                        <p className="text-muted">{booking.show?.theaterName}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-wrap gap-1">
-                        {booking.seats.map(s => (
-                          <span key={s} className="rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-bold text-muted border border-white/5">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-right font-title text-lg font-black text-brand-soft">₹{booking.amount}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="px-6 py-20 text-center text-muted">
-                     <div className="flex flex-col items-center">
-                        <ReceiptText size={40} className="mb-4 opacity-10" />
-                        <p>No bookings found matching your request.</p>
-                     </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="display text-4xl">Bookings</h1>
+          <p className="text-sm text-muted">Most recent 500 bookings, including box-office sales.</p>
         </div>
-      </div>
+        <div className="relative sm:w-72">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle"
+          />
+          <label htmlFor="booking-search" className="sr-only">
+            Search bookings
+          </label>
+          <input
+            id="booking-search"
+            type="search"
+            className="field pl-9"
+            placeholder="Code, customer or film"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+      </header>
+      {error ? (
+        <ErrorState message={error} onRetry={reload} />
+      ) : loading ? (
+        <Skeleton className="h-96" />
+      ) : bookings.length ? (
+        <BookingsTable bookings={bookings} />
+      ) : (
+        <EmptyState icon={ReceiptText} title={needle ? "No bookings match your search" : "No bookings yet"} />
+      )}
     </div>
   );
-};
-
-export default AdminBookingsPage;
+}

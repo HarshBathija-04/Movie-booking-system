@@ -1,154 +1,97 @@
+import { ChevronRight, Ticket } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { Calendar, Clock, MapPin, Ticket, ChevronRight, Search } from "lucide-react";
-import api from "../services/api";
+import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
+import useFetch from "../hooks/useFetch";
+import { dayLabel, formatMoney, formatTime } from "../lib/format";
 
-const MyBookingsPage = () => {
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadBookings = async () => {
-      try {
-        const { data } = await api.get("/bookings/mine");
-        setBookings(data.bookings || []);
-      } catch (error) {
-        console.error("Failed to load bookings", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBookings();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="section-shell flex min-h-[60vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+function TicketStub({ booking, past }) {
+  const { movie, show } = booking;
+  return (
+    <Link
+      to={`/my-bookings/${booking.id}`}
+      className={`ticket group grid grid-cols-[64px_1fr] gap-4 p-4 transition [--cut:200%] hover:border-line-strong sm:grid-cols-[72px_1fr_auto] sm:[--cut:calc(100%-148px)] ${past ? "opacity-70" : ""}`}
+    >
+      <div className="overflow-hidden rounded-md">
+        <Poster movie={movie} />
       </div>
-    );
-  }
+      <div className="min-w-0 self-center">
+        <h3 className="truncate font-bold group-hover:text-marquee">{movie.title}</h3>
+        <p className="mt-1 text-sm text-muted">
+          {dayLabel(show.showDate)} · {formatTime(show.showTime)}
+        </p>
+        <p className="text-sm text-muted">
+          {show.screenName} · {show.format}
+        </p>
+        <p className="mt-2 text-sm">
+          <span className="text-subtle">Seats </span>
+          <span className="font-semibold">{booking.seats.join(", ")}</span>
+        </p>
+      </div>
+      <div className="perforation col-span-2 flex items-center justify-between gap-3 border-t border-l-0 border-dashed border-line-strong pt-3 sm:col-span-1 sm:w-[132px] sm:flex-col sm:items-end sm:justify-center sm:border-t-0 sm:border-l-2 sm:pt-0 sm:pl-4">
+        <div className="sm:text-right">
+          <p className="text-[11px] font-bold tracking-widest text-subtle uppercase">Paid</p>
+          <p className="font-bold tabular-nums">{formatMoney(booking.amount)}</p>
+        </div>
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-marquee">
+          Ticket <ChevronRight aria-hidden className="size-4" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+export default function MyBookingsPage() {
+  const { data, error, loading, reload } = useFetch("/bookings/mine");
+  const [tab, setTab] = useState("upcoming");
+  const bookings = data?.bookings || [];
+  const upcoming = bookings.filter((b) => !b.show.hasStarted).reverse(); // soonest first
+  const past = bookings.filter((b) => b.show.hasStarted);
+  const list = tab === "upcoming" ? upcoming : past;
 
   return (
-    <div className="section-shell py-12 md:py-20">
-      <div className="mb-12 flex flex-col items-center justify-between gap-6 md:flex-row">
-        <div>
-          <h1 className="font-display text-6xl uppercase tracking-tighter md:text-7xl">
-            My <span className="text-brand">History</span>
-          </h1>
-          <p className="mt-2 text-muted">
-            Track all your past and upcoming movie experiences.
-          </p>
-        </div>
-        <div className="flex items-center gap-4 rounded-2xl bg-white/5 border border-white/10 px-6 py-3">
-           <div className="text-center">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Total</p>
-              <p className="font-title font-black text-brand-soft leading-none">
-                {bookings.length} Bookings
-              </p>
-           </div>
-        </div>
+    <div className="page max-w-4xl py-10">
+      <p className="eyebrow">Wallet</p>
+      <h1 className="display mt-1 text-5xl sm:text-6xl">My bookings</h1>
+
+      <div role="group" aria-label="Filter bookings" className="mt-6 mb-6 flex gap-2">
+        <button type="button" className="chip" aria-pressed={tab === "upcoming"} onClick={() => setTab("upcoming")}>
+          Upcoming {data && <span className="tabular-nums">({upcoming.length})</span>}
+        </button>
+        <button type="button" className="chip" aria-pressed={tab === "past"} onClick={() => setTab("past")}>
+          Past {data && <span className="tabular-nums">({past.length})</span>}
+        </button>
       </div>
 
-      {bookings.length > 0 ? (
-        <div className="grid gap-6">
-          {bookings.map((booking) => (
-            <Link
-              key={booking._id}
-              to={`/my-bookings/${booking._id}`}
-              className="glass-card group flex flex-col overflow-hidden border-white/5 transition-all duration-300 hover:border-brand/30 hover:bg-white/[0.04] md:flex-row"
-            >
-              <div className="relative h-48 w-full shrink-0 md:h-auto md:w-48 lg:w-64">
-                <img
-                  src={booking.movie.posterUrl}
-                  alt={booking.movie.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:hidden" />
-                <div className="absolute bottom-4 left-4 rounded-lg bg-brand px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black md:hidden">
-                   View Ticket
-                </div>
-              </div>
-
-              <div className="flex flex-1 flex-col justify-between p-6 md:p-8">
-                <div>
-                   <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-title text-2xl font-black text-white group-hover:text-brand-soft transition-colors">
-                          {booking.movie.title}
-                        </h3>
-                        <p className="text-xs font-bold text-muted uppercase tracking-widest mt-1">
-                          Booking ID: {booking.bookingId}
-                        </p>
-                      </div>
-                      <div className="hidden rounded-full bg-brand/10 border border-brand/20 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-brand-soft md:block">
-                        {booking.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
-                      </div>
-                   </div>
-
-                   <div className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
-                      <div className="flex items-center gap-3">
-                        <Calendar size={18} className="text-brand" />
-                        <div>
-                           <p className="text-[10px] font-bold text-muted uppercase">Date</p>
-                           <p className="text-xs font-bold">{new Date(booking.show.showDate).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Clock size={18} className="text-brand" />
-                        <div>
-                           <p className="text-[10px] font-bold text-muted uppercase">Time</p>
-                           <p className="text-xs font-bold">{booking.show.showTime}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <MapPin size={18} className="text-brand" />
-                        <div>
-                           <p className="text-[10px] font-bold text-muted uppercase">Venue</p>
-                           <p className="text-xs font-bold truncate max-w-[120px]">{booking.show.theaterName}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Ticket size={18} className="text-brand" />
-                        <div>
-                           <p className="text-[10px] font-bold text-muted uppercase">Seats</p>
-                           <p className="text-xs font-bold">{booking.seats.length} ({booking.seats.join(", ")})</p>
-                        </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div className="mt-8 flex items-center justify-between border-t border-white/5 pt-6">
-                   <div className="flex items-center gap-2">
-                       <span className="text-sm font-bold text-muted">Total Paid:</span>
-                       <span className="font-title text-xl font-black text-white md:text-2xl">₹{booking.amount}</span>
-                   </div>
-                   <div className="flex items-center gap-2 font-title font-bold text-brand-soft group-hover:gap-3 transition-all">
-                      Digital Ticket
-                      <ChevronRight size={18} />
-                   </div>
-                </div>
-              </div>
-            </Link>
+      {error ? (
+        <ErrorState message={error} onRetry={reload} />
+      ) : loading ? (
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-32" />
           ))}
         </div>
+      ) : list.length ? (
+        <ul className="space-y-4">
+          {list.map((b) => (
+            <li key={b.id} className="animate-rise">
+              <TicketStub booking={b} past={tab === "past"} />
+            </li>
+          ))}
+        </ul>
       ) : (
-        <div className="glass-card flex flex-col items-center justify-center py-24 text-center">
-          <div className="rounded-full bg-white/5 p-8 mb-6 border border-white/10">
-            <Ticket size={48} className="text-muted opacity-20" />
-          </div>
-          <h3 className="text-2xl font-bold">No bookings yet</h3>
-          <p className="mt-2 text-muted max-w-sm">
-            It looks like you haven't booked any movies yet. Head over to the movies page to find something exciting!
-          </p>
-          <Link to="/movies" className="btn-primary mt-8">
-            Browse Movies
-          </Link>
-        </div>
+        <EmptyState
+          icon={Ticket}
+          title={tab === "upcoming" ? "No upcoming tickets" : "No past bookings yet"}
+          action={
+            <Link to="/movies" className="btn-primary">
+              Find a film
+            </Link>
+          }
+        >
+          {tab === "upcoming" ? "Your next movie night is a few taps away." : "Films you've watched will show up here."}
+        </EmptyState>
       )}
     </div>
   );
-};
-
-export default MyBookingsPage;
+}

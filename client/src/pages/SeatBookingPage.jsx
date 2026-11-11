@@ -1,201 +1,202 @@
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Info, Loader2, Ticket } from "lucide-react";
+import { useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronLeft, CreditCard, Info, Ticket, ShieldCheck } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import SeatGrid from "../components/SeatGrid";
-import api from "../services/api";
+import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
+import useFetch from "../hooks/useFetch";
+import { dayLabel, formatMoney, formatTime } from "../lib/format";
+import api, { errorMessage } from "../services/api";
 
-const SeatBookingPage = () => {
+const MAX_SEATS = 10;
+
+export default function SeatBookingPage() {
   const { showId } = useParams();
   const navigate = useNavigate();
-  const [show, setShow] = useState(null);
-  const [seats, setSeats] = useState([]);
-  const [selectedSeats, setSelectedSeats] = useState([]);
-  const [booking, setBooking] = useState(false);
+  const { data, error, loading, reload } = useFetch(`/shows/${showId}`);
+  const [selected, setSelected] = useState([]); // seat objects, in pick order
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const loadShow = async () => {
-      try {
-        const { data } = await api.get(`/shows/${showId}`);
-        setShow(data.show);
-        setSeats(data.seats || []);
-      } catch (error) {
-        toast.error("Failed to load show details");
+  const show = data?.show;
+  const total = selected.reduce((sum, s) => sum + show.prices[s.category], 0);
+
+  const toggle = (seat) =>
+    setSelected((prev) => {
+      if (prev.some((s) => s.seatNumber === seat.seatNumber))
+        return prev.filter((s) => s.seatNumber !== seat.seatNumber);
+      if (prev.length >= MAX_SEATS) {
+        toast.error(`You can book up to ${MAX_SEATS} seats at a time`);
+        return prev;
       }
-    };
+      return [...prev, seat];
+    });
 
-    loadShow();
-    window.scrollTo(0, 0);
-  }, [showId]);
-
-  const total = useMemo(
-    () => selectedSeats.length * (show?.ticketPrice || 0),
-    [selectedSeats, show]
-  );
-
-  const toggleSeat = (seatNumber) => {
-    setSelectedSeats((prev) =>
-      prev.includes(seatNumber)
-        ? prev.filter((seat) => seat !== seatNumber)
-        : [...prev, seatNumber]
-    );
-  };
-
-  const handleBooking = async () => {
-    if (!selectedSeats.length) {
-      toast.error("Please select at least one seat to continue");
-      return;
-    }
-
-    setBooking(true);
+  const checkout = async () => {
+    setSubmitting(true);
     try {
-      const { data } = await api.post("/bookings", {
-        showId,
-        seats: selectedSeats,
-        paymentMethod: "simulation",
+      const { data: res } = await api.post("/bookings", {
+        showId: Number(showId),
+        seats: selected.map((s) => s.seatNumber),
       });
-      toast.success("Ticket Booked Successfully!");
-      navigate(`/my-bookings/${data.booking._id}`);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Booking failed");
+      toast.success("You're booked! Enjoy the show.");
+      navigate(`/my-bookings/${res.booking.id}`, { replace: true });
+    } catch (err) {
+      toast.error(errorMessage(err, "Booking failed, please try again"));
+      const taken = err.response?.data?.error?.details?.taken;
+      if (taken) {
+        setSelected((prev) => prev.filter((s) => !taken.includes(s.seatNumber)));
+        reload();
+      }
     } finally {
-      setBooking(false);
+      setSubmitting(false);
     }
   };
 
-  if (!show) {
+  if (error) {
     return (
-      <div className="section-shell flex min-h-[60vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+      <div className="page py-16">
+        <ErrorState message={error} onRetry={reload} />
       </div>
     );
   }
 
-  return (
-    <div className="pb-20 pt-10">
-      <div className="section-shell">
-        <Link 
-          to={`/movies/${show.movie._id}`} 
-          className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-white mb-8 transition-colors"
+  if (loading && !data) {
+    return (
+      <div className="page grid gap-8 py-10 lg:grid-cols-[1fr_360px]">
+        <Skeleton className="h-[460px]" />
+        <Skeleton className="h-80" />
+      </div>
+    );
+  }
+
+  if (show.hasStarted) {
+    return (
+      <div className="page py-16">
+        <EmptyState
+          icon={Ticket}
+          title="This show has already started"
+          action={
+            <Link to={`/movies/${show.movie.id}`} className="btn-primary">
+              Pick another showtime
+            </Link>
+          }
         >
-          <ChevronLeft size={16} />
-          Back to Movie Details
-        </Link>
+          Bookings close when the film begins.
+        </EmptyState>
+      </div>
+    );
+  }
 
-        <div className="grid gap-10 xl:grid-cols-[1fr_400px]">
-          {/* Left Side: Seat Layout */}
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div>
-                <h1 className="font-display text-5xl uppercase tracking-wider text-white">
-                  Pick Your <span className="text-brand">Seats</span>
-                </h1>
-                <p className="text-muted mt-1">Tap on available seats to select them.</p>
-              </div>
-              
-              <div className="flex items-center gap-4 rounded-2xl bg-white/5 border border-white/10 px-6 py-3">
-                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Selected</p>
-                    <p className="font-title font-black text-brand-soft leading-none">
-                      {selectedSeats.length} Tickets
-                    </p>
-                 </div>
-                 <div className="h-8 w-px bg-white/10" />
-                 <div className="text-right">
-                    <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Total Price</p>
-                    <p className="font-title font-black text-white leading-none">
-                      ₹{total}
-                    </p>
-                 </div>
-              </div>
-            </div>
+  const summary = (
+    <>
+      <div className="flex gap-4">
+        <div className="w-16 shrink-0 overflow-hidden rounded-md">
+          <Poster movie={show.movie} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="leading-tight font-bold">{show.movie.title}</h2>
+          <p className="mt-1 text-sm text-muted">
+            {dayLabel(show.showDate)}, {formatTime(show.showTime)}
+          </p>
+          <p className="text-sm text-muted">
+            {show.screenName} · {show.format}
+          </p>
+        </div>
+      </div>
 
-            <SeatGrid seats={seats} selectedSeats={selectedSeats} onToggle={toggleSeat} />
-          </div>
+      <div className="my-5 border-t border-dashed border-line-strong" />
 
-          {/* Right Side: Booking Summary Panel */}
-          <aside className="lg:sticky lg:top-28 h-fit space-y-6">
-            <div className="glass-card p-8 border-brand/20 bg-brand/[0.02]">
-              <div className="mb-6 flex items-start justify-between">
-                <div>
-                  <h2 className="font-title text-2xl font-black text-white leading-tight">
-                    {show.movie.title}
-                  </h2>
-                  <p className="text-brand-soft text-xs font-bold uppercase tracking-widest mt-1">
-                    Booking Summary
-                  </p>
-                </div>
-                <div className="rounded-xl bg-white/5 p-2 text-muted border border-white/10">
-                  <Ticket size={24} />
-                </div>
-              </div>
-              
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between border-b border-white/5 pb-4">
-                  <span className="text-muted">Theater</span>
-                  <span className="text-right font-semibold">{show.theaterName}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/5 pb-4">
-                  <span className="text-muted">Screen</span>
-                  <span className="text-right font-semibold">{show.screenName}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/5 pb-4">
-                  <span className="text-muted">Date & Time</span>
-                  <span className="text-right font-semibold">
-                    {new Date(show.showDate).toLocaleDateString()} @ {show.showTime}
-                  </span>
-                </div>
-                
-                <div className="pt-4 space-y-3">
-                  <div className="flex justify-between items-center text-muted">
-                    <span>Seats ({selectedSeats.length})</span>
-                    <span className="font-title font-bold text-white max-w-[150px] truncate text-right">
-                      {selectedSeats.join(", ") || "None selected"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-muted">
-                    <span>Convenience Fee</span>
-                    <span className="text-white">₹0 (Free)</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 flex justify-between items-center rounded-2xl bg-white/5 p-5 border border-white/10">
-                  <span className="font-title font-bold uppercase tracking-widest text-muted">Amount Payable</span>
-                  <span className="font-title text-3xl font-black text-white">₹{total}</span>
-                </div>
-              </div>
-
-              <div className="mt-8 space-y-4">
-                <div className="flex gap-2 rounded-xl bg-brand/5 border border-brand/10 p-4 text-[10px] font-bold text-brand-soft uppercase leading-relaxed text-center">
-                  <Info size={16} className="shrink-0" />
-                  Testing Mode: Payment is simulated for project demonstration.
-                </div>
-
-                <button 
-                  disabled={booking || selectedSeats.length === 0} 
-                  onClick={handleBooking} 
-                  className="btn-primary w-full py-4 text-lg"
+      {selected.length ? (
+        <ul className="space-y-2 text-sm" aria-label="Selected seats">
+          {selected.map((s) => (
+            <li key={s.seatNumber} className="flex items-center justify-between gap-2">
+              <span>
+                <span className="font-bold">{s.seatNumber}</span> <span className="text-muted">· {s.category}</span>
+              </span>
+              <span className="flex items-center gap-3 tabular-nums">
+                {formatMoney(show.prices[s.category])}
+                <button
+                  type="button"
+                  onClick={() => toggle(s)}
+                  className="text-xs text-subtle underline-offset-2 hover:text-velvet hover:underline"
                 >
-                  <CreditCard size={20} className="mr-2" />
-                  {booking ? "Confirming..." : "Pay & Book Tickets"}
+                  Remove<span className="sr-only"> seat {s.seatNumber}</span>
                 </button>
-              </div>
-            </div>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-subtle">Tap seats on the map to add them here.</p>
+      )}
 
-            {/* Satisfaction Guarantee */}
-            <div className="glass-card p-6 flex items-center gap-4 border-emerald-500/20 bg-emerald-500/5">
-                <div className="rounded-full bg-emerald-500/20 p-2 text-emerald-400">
-                   <ShieldCheck size={20} />
-                </div>
-                <p className="text-xs text-emerald-100/60 leading-relaxed font-semibold">
-                  Safe & Secure Checkout. Instant digital ticket generation with QR verification.
-                </p>
-            </div>
-          </aside>
+      <div className="mt-5 flex items-center justify-between border-t border-line pt-4">
+        <span className="text-sm text-muted">Convenience fee</span>
+        <span className="text-sm font-semibold text-teal">Free</span>
+      </div>
+      <div className="mt-2 flex items-baseline justify-between">
+        <span className="font-bold">Total</span>
+        <span className="text-2xl font-bold tabular-nums" aria-live="polite">
+          {formatMoney(total)}
+        </span>
+      </div>
+      <button
+        type="button"
+        className="btn-primary mt-5 w-full"
+        disabled={!selected.length || submitting}
+        onClick={checkout}
+      >
+        {submitting ? (
+          <Loader2 aria-hidden className="size-4 animate-spin" />
+        ) : (
+          <Ticket aria-hidden className="size-4" />
+        )}
+        {submitting ? "Confirming seats…" : selected.length ? `Pay ${formatMoney(total)}` : "Select seats"}
+      </button>
+      <p className="mt-3 flex items-start gap-2 text-xs text-subtle">
+        <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" /> Demo checkout: no card is charged. Seats are locked
+        the moment you pay.
+      </p>
+    </>
+  );
+
+  return (
+    <div className="page py-8 pb-28 lg:pb-10">
+      <Link to={`/movies/${show.movie.id}`} className="btn-ghost btn-sm mb-4 -ml-3">
+        <ArrowLeft aria-hidden className="size-4" /> {show.movie.title}
+      </Link>
+      <div className="mb-6">
+        <h1 className="display text-4xl sm:text-5xl">Choose your seats</h1>
+        <p className="mt-1 text-sm text-muted">Up to {MAX_SEATS} seats. Use arrow keys to move around the map.</p>
+      </div>
+
+      <div className="grid items-start gap-8 lg:grid-cols-[1fr_360px]">
+        <SeatGrid
+          seats={data.seats}
+          selected={selected.map((s) => s.seatNumber)}
+          prices={show.prices}
+          onToggle={toggle}
+          disabled={submitting}
+        />
+        <aside aria-label="Order summary" className="card p-6 lg:sticky lg:top-24">
+          {summary}
+        </aside>
+      </div>
+
+      {/* Mobile checkout bar: the full summary sits under the map, this keeps the action in reach. */}
+      <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
+          <div className="min-w-0 text-sm">
+            <p className="truncate text-muted">
+              {selected.length ? selected.map((s) => s.seatNumber).join(", ") : "No seats selected"}
+            </p>
+            <p className="font-bold tabular-nums">{formatMoney(total)}</p>
+          </div>
+          <button type="button" className="btn-primary" disabled={!selected.length || submitting} onClick={checkout}>
+            {submitting ? "Confirming…" : "Pay now"}
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default SeatBookingPage;
+}

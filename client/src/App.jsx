@@ -1,12 +1,10 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import AppShell from "./components/AppShell";
-import AdminLayout from "./components/AdminLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { Clapperboard } from "lucide-react";
+import { lazy, Suspense } from "react";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import AdminRoute from "./components/AdminRoute";
-import AdminBookingsPage from "./pages/admin/AdminBookingsPage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminMoviesPage from "./pages/admin/AdminMoviesPage";
-import AdminShowsPage from "./pages/admin/AdminShowsPage";
+import AppShell from "./components/AppShell";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { EmptyState, Skeleton } from "./components/ui";
 import AuthPage from "./pages/AuthPage";
 import BookingDetailsPage from "./pages/BookingDetailsPage";
 import HomePage from "./pages/HomePage";
@@ -15,56 +13,66 @@ import MoviesPage from "./pages/MoviesPage";
 import MyBookingsPage from "./pages/MyBookingsPage";
 import SeatBookingPage from "./pages/SeatBookingPage";
 
-const App = () => (
-  <Routes>
-    <Route element={<AppShell />}>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/movies" element={<MoviesPage />} />
-      <Route path="/movies/:movieId" element={<MovieDetailsPage />} />
-      <Route
-        path="/book/:showId"
-        element={
-          <ProtectedRoute>
-            <SeatBookingPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-bookings"
-        element={
-          <ProtectedRoute>
-            <MyBookingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-bookings/:bookingId"
-        element={
-          <ProtectedRoute>
-            <BookingDetailsPage />
-          </ProtectedRoute>
-        }
-      />
-    </Route>
+// Admin screens are only for staff, so keep them out of the customer bundle.
+const AdminLayout = lazy(() => import("./components/AdminLayout"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/AdminDashboardPage"));
+const AdminMoviesPage = lazy(() => import("./pages/admin/AdminMoviesPage"));
+const AdminShowsPage = lazy(() => import("./pages/admin/AdminShowsPage"));
+const AdminBookingsPage = lazy(() => import("./pages/admin/AdminBookingsPage"));
 
-    <Route
-      path="/admin"
-      element={
-        <AdminRoute>
-          <AdminLayout />
-        </AdminRoute>
+const NotFound = () => (
+  <div className="page py-20">
+    <EmptyState
+      icon={Clapperboard}
+      title="This reel is missing"
+      action={
+        <Link to="/" className="btn-primary">
+          Back to the lobby
+        </Link>
       }
     >
-      <Route index element={<Navigate to="/admin/dashboard" replace />} />
-      <Route path="dashboard" element={<AdminDashboardPage />} />
-      <Route path="movies" element={<AdminMoviesPage />} />
-      <Route path="shows" element={<AdminShowsPage />} />
-      <Route path="bookings" element={<AdminBookingsPage />} />
-    </Route>
-
-    <Route path="*" element={<Navigate to="/" replace />} />
-  </Routes>
+      The page you were looking for doesn&apos;t exist or has moved.
+    </EmptyState>
+  </div>
 );
 
-export default App;
+const protect = (el) => <ProtectedRoute>{el}</ProtectedRoute>;
+
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/movies" element={<MoviesPage />} />
+        <Route path="/movies/:movieId" element={<MovieDetailsPage />} />
+        <Route path="/book/:showId" element={protect(<SeatBookingPage />)} />
+        <Route path="/my-bookings" element={protect(<MyBookingsPage />)} />
+        <Route path="/my-bookings/:bookingId" element={protect(<BookingDetailsPage />)} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Suspense
+                fallback={
+                  <div className="page py-10">
+                    <Skeleton className="h-96" />
+                  </div>
+                }
+              >
+                <AdminLayout />
+              </Suspense>
+            </AdminRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="movies" element={<AdminMoviesPage />} />
+          <Route path="shows" element={<AdminShowsPage />} />
+          <Route path="bookings" element={<AdminBookingsPage />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
+}

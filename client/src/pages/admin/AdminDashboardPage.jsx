@@ -1,130 +1,48 @@
-import { useEffect, useState } from "react";
+import { CalendarClock, Clapperboard, IndianRupee, ReceiptText, Ticket, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import StatCard from "../../components/StatCard";
-import api from "../../services/api";
-import { Users, Film, Ticket, Calendar, IndianRupee, Activity, ArrowUpRight } from "lucide-react";
+import { ErrorState, Skeleton } from "../../components/ui";
+import useFetch from "../../hooks/useFetch";
+import { formatMoney } from "../../lib/format";
+import { BookingsTable } from "./AdminBookingsPage";
 
-const AdminDashboardPage = () => {
-  const [stats, setStats] = useState(null);
-  const [recentBookings, setRecentBookings] = useState([]);
+export default function AdminDashboardPage() {
+  const { data, error, loading, reload } = useFetch("/admin/dashboard");
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const { data } = await api.get("/admin/dashboard");
-        setStats(data.stats);
-        setRecentBookings(data.recentBookings || []);
-      } catch (e) {
-        console.error("Dashboard error", e);
-      }
-    };
+  if (error) return <ErrorState message={error} onRetry={reload} />;
 
-    loadDashboard();
-  }, []);
-
-  if (!stats) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
-      </div>
-    );
-  }
+  const s = data?.stats;
+  const tiles = s && [
+    ["Revenue", formatMoney(s.totalRevenue), IndianRupee],
+    ["Tickets sold", s.totalTicketsSold.toLocaleString("en-IN"), Ticket],
+    ["Bookings", s.totalBookings.toLocaleString("en-IN"), ReceiptText],
+    ["Upcoming shows", s.totalShows, CalendarClock],
+    ["Active films", s.totalMovies, Clapperboard],
+    ["Customers", s.totalUsers, Users],
+  ];
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="font-display text-5xl uppercase tracking-tighter">
-          Platform <span className="text-brand">Overview</span>
-        </h1>
-        <p className="text-muted">Real-time performance metrics and recent activity for CineVerse.</p>
+    <div className="space-y-8">
+      <header>
+        <h1 className="display text-4xl">Overview</h1>
+        <p className="text-sm text-muted">Sales and schedule at a glance.</p>
+      </header>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        {loading || !tiles
+          ? Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-24" />)
+          : tiles.map(([label, value, icon]) => <StatCard key={label} label={label} value={value} icon={icon} />)}
       </div>
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard 
-          label="Total Users" 
-          value={stats.totalUsers} 
-          icon={Users} 
-          colorClass="text-brand-soft"
-          gradient="bg-brand/20"
-        />
-        <StatCard 
-          label="Movies Active" 
-          value={stats.totalMovies} 
-          icon={Film} 
-          colorClass="text-brand"
-        />
-        <StatCard 
-          label="Total Shows" 
-          value={stats.totalShows} 
-          icon={Calendar} 
-          colorClass="text-emerald-400"
-          gradient="bg-emerald-500/10"
-        />
-        <StatCard 
-          label="Tickets Sold" 
-          value={stats.totalTicketsSold} 
-          icon={Ticket} 
-          colorClass="text-brand-soft"
-        />
-        <StatCard 
-          label="Total Bookings" 
-          value={stats.totalBookings} 
-          icon={Activity} 
-          colorClass="text-brand"
-        />
-        <StatCard 
-          label="Gross Revenue" 
-          value={`₹${stats.totalRevenue}`} 
-          icon={IndianRupee} 
-          colorClass="text-emerald-400"
-          gradient="bg-emerald-500/10"
-        />
-      </div>
-
-      <div className="glass-card overflow-hidden">
-        <div className="flex items-center justify-between border-b border-white/5 p-6">
-          <h2 className="font-title text-xl font-black text-white flex items-center gap-2">
-            <Activity size={20} className="text-brand" />
-            Recent Booking Activity
+      <section aria-labelledby="recent">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 id="recent" className="font-bold">
+            Recent bookings
           </h2>
-          <button className="text-xs font-bold text-brand hover:underline flex items-center gap-1">
-            View All Bookings <ArrowUpRight size={14} />
-          </button>
+          <Link to="../bookings" className="btn-ghost btn-sm">
+            View all
+          </Link>
         </div>
-        
-        <div className="divide-y divide-white/5">
-          {recentBookings.length > 0 ? (
-            recentBookings.map((booking) => (
-              <div
-                key={booking._id}
-                className="flex items-center justify-between p-6 hover:bg-white/[0.02] transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                   <div className="h-12 w-10 overflow-hidden rounded-lg bg-white/5 border border-white/5">
-                      <img src={booking.movie?.posterUrl} className="h-full w-full object-cover" alt="" />
-                   </div>
-                   <div>
-                      <p className="font-bold text-white">{booking.movie?.title}</p>
-                      <p className="text-xs text-muted">
-                        Booked by <span className="text-white/80">{booking.user?.name}</span> • {booking.bookingId}
-                      </p>
-                   </div>
-                </div>
-                
-                <div className="text-right">
-                   <p className="font-title font-bold text-brand-soft">₹{booking.amount}</p>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-muted">
-                     {new Date(booking.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                   </p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-12 text-center text-muted">No recent bookings recorded today.</div>
-          )}
-        </div>
-      </div>
+        {data ? <BookingsTable bookings={data.recentBookings} /> : <Skeleton className="h-64" />}
+      </section>
     </div>
   );
-};
-
-export default AdminDashboardPage;
+}
