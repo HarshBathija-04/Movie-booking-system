@@ -95,7 +95,21 @@ export default function AdminBookingsPage() {
       ) : bookings.length ? (
         <BookingsTable bookings={bookings} />
       ) : (
-        <EmptyState icon={ReceiptText} title={needle ? "No bookings match your search" : "No bookings yet"} />
+        <EmptyState
+          icon={ReceiptText}
+          title={needle ? "No bookings match your search" : "No bookings yet"}
+          action={
+            needle && (
+              <button type="button" className="btn-outline" onClick={() => setQ("")}>
+                Clear search
+              </button>
+            )
+          }
+        >
+          {needle
+            ? "Search looks at the booking code, customer name, email and film."
+            : "Sales will appear here as they happen."}
+        </EmptyState>
       )}
     </div>
   );

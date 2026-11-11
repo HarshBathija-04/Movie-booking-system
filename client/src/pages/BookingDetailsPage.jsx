@@ -73,7 +73,7 @@ export default function BookingDetailsPage() {
                 <p className="mt-1 font-mono text-lg font-bold tracking-wider break-all">{b.bookingCode}</p>
                 <p className="mt-1 text-xs text-subtle">
                   Booked {new Date(b.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })} ·{" "}
-                  {b.paymentMethod} payment
+                  {b.paymentMethod === "simulation" ? "demo payment, no card charged" : `${b.paymentMethod} payment`}
                 </p>
               </div>
               <img

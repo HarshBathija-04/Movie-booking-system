@@ -191,7 +191,7 @@ export default function SeatBookingPage() {
             <p className="font-bold tabular-nums">{formatMoney(total)}</p>
           </div>
           <button type="button" className="btn-primary" disabled={!selected.length || submitting} onClick={checkout}>
-            {submitting ? "Confirming…" : "Pay now"}
+            {submitting ? "Confirming…" : selected.length ? `Pay ${formatMoney(total)}` : "Select seats"}
           </button>
         </div>
       </div>

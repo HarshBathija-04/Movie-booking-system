@@ -47,7 +47,7 @@ export default function AuthPage() {
     } catch (err) {
       const details = err.response?.data?.error?.details;
       if (details) setErrors(Object.fromEntries(details.map((d) => [d.path, d.message])));
-      toast.error(errorMessage(err, "Couldn't sign you in"));
+      toast.error(errorMessage(err, mode === "login" ? "Couldn't sign you in" : "Couldn't create your account"));
     } finally {
       setSubmitting(false);
     }
@@ -77,7 +77,9 @@ export default function AuthPage() {
       <div className="card mx-auto w-full max-w-md p-6 sm:p-8">
         <h2 className="display text-4xl">{mode === "login" ? "Sign in" : "Create account"}</h2>
         <p className="mt-1 text-sm text-muted">
-          {mode === "login" ? "Welcome back. Your tickets are right where you left them." : "It takes 20 seconds."}
+          {mode === "login"
+            ? "Welcome back. Your tickets are right where you left them."
+            : "Four fields, then you are picking seats."}
         </p>
 
         <form

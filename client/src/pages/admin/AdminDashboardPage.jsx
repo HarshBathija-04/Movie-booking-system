@@ -48,7 +48,13 @@ export default function AdminDashboardPage() {
             View all
           </Link>
         </div>
-        {data ? <BookingsTable bookings={data.recentBookings} /> : <Skeleton className="h-64" />}
+        {!data ? (
+          <Skeleton className="h-64" />
+        ) : data.recentBookings.length ? (
+          <BookingsTable bookings={data.recentBookings} />
+        ) : (
+          <p className="card p-6 text-center text-sm text-muted">No bookings yet. New sales show up here first.</p>
+        )}
       </section>
     </div>
   );

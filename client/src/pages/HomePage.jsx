@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, Poster, Skeleton } from "../components/ui";
 import useFetch from "../hooks/useFetch";
 import { dayLabel, formatRuntime, formatTime } from "../lib/format";
 
-function Hero({ movie }) {
+function Hero({ movie, loading }) {
   const { data } = useFetch(movie ? `/movies/${movie.id}` : null);
   const nextShows = data?.shows?.slice(0, 4) || [];
   const backdrop = movie?.bannerUrl || movie?.posterUrl;
@@ -70,7 +70,7 @@ function Hero({ movie }) {
                 </Link>
               </div>
             </>
-          ) : (
+          ) : loading ? (
             <div className="mt-4 space-y-4">
               <h1 id="hero-title" className="sr-only">
                 CineVerse
@@ -79,6 +79,18 @@ function Hero({ movie }) {
               <Skeleton className="h-4 w-1/2" />
               <Skeleton className="h-16 w-full" />
             </div>
+          ) : (
+            <>
+              <h1 id="hero-title" className="display mt-3 text-[clamp(3.25rem,9vw,6.5rem)]">
+                Your seat is <span className="text-marquee">waiting.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
+                Pick a film, choose exact seats on a live map and walk in with a QR ticket.
+              </p>
+              <Link to="/movies" className="btn-primary mt-8">
+                Browse all films <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            </>
           )}
         </div>
         {movie && (
@@ -99,7 +111,7 @@ export default function HomePage() {
 
   return (
     <>
-      <Hero movie={headliner} />
+      <Hero movie={headliner} loading={loading} />
 
       <div className="page mt-12 space-y-16">
         <Concierge />

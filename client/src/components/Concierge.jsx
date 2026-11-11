@@ -63,7 +63,14 @@ export default function Concierge() {
               className="btn-primary"
               disabled={state.status === "loading" || prompt.trim().length < 3}
             >
-              {state.status === "loading" ? <Loader2 aria-hidden className="size-4 animate-spin" /> : "Ask"}
+              {state.status === "loading" ? (
+                <>
+                  <Loader2 aria-hidden className="size-4 animate-spin" />
+                  <span className="sr-only">Finding picks</span>
+                </>
+              ) : (
+                "Get picks"
+              )}
             </button>
           </form>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -118,7 +125,9 @@ export default function Concierge() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted">No good match tonight - try describing it differently.</p>
+                <p className="text-sm text-muted">
+                  Nothing on the schedule fits that yet. Try a genre, a mood or who you are going with.
+                </p>
               )}
             </>
           )}

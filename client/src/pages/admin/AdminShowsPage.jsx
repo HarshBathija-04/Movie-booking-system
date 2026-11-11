@@ -1,4 +1,4 @@
-import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { EmptyState, ErrorState, Skeleton } from "../../components/ui";
@@ -97,6 +97,7 @@ export default function AdminShowsPage() {
                     onClick={() => {
                       setEditingId(s.id);
                       setForm({ ...EMPTY, ...s });
+                      document.getElementById("show-form")?.scrollIntoView({ behavior: "smooth" });
                     }}
                   >
                     <Pencil aria-hidden className="size-4" />
@@ -119,7 +120,7 @@ export default function AdminShowsPage() {
           )}
         </section>
 
-        <form onSubmit={save} className="card space-y-4 p-5 xl:sticky xl:top-24">
+        <form id="show-form" onSubmit={save} className="card space-y-4 p-5 xl:sticky xl:top-24">
           <h2 className="font-bold">{editingId ? "Edit showtime" : "Schedule a show"}</h2>
           <div>
             <label htmlFor="s-movie" className="label">
@@ -166,7 +167,12 @@ export default function AdminShowsPage() {
           </div>
           <div className="flex gap-2">
             <button type="submit" className="btn-primary flex-1" disabled={saving}>
-              {!editingId && <Plus aria-hidden className="size-4" />} {editingId ? "Save changes" : "Schedule"}
+              {saving ? (
+                <Loader2 aria-hidden className="size-4 animate-spin" />
+              ) : (
+                !editingId && <Plus aria-hidden className="size-4" />
+              )}{" "}
+              {editingId ? "Save changes" : "Schedule show"}
             </button>
             {editingId && (
               <button type="button" className="btn-outline" onClick={reset}>

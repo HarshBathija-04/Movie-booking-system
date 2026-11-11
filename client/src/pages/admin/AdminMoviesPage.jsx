@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { ErrorState, Poster, Skeleton } from "../../components/ui";
@@ -118,8 +118,8 @@ export default function AdminMoviesPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{m.title}</p>
                     <p className="truncate text-xs text-subtle">
-                      {m.language} · {formatRuntime(m.durationMinutes)} · {m.rating}/10 · {m.upcomingShows} upcoming
-                      shows
+                      {m.language} · {formatRuntime(m.durationMinutes)} · {m.rating}/10 · {m.upcomingShows} upcoming{" "}
+                      {m.upcomingShows === 1 ? "show" : "shows"}
                     </p>
                   </div>
                   <button
@@ -171,7 +171,12 @@ export default function AdminMoviesPage() {
           })}
           <div className="flex gap-2">
             <button type="submit" className="btn-primary flex-1" disabled={saving}>
-              {!editingId && <Plus aria-hidden className="size-4" />} {editingId ? "Save changes" : "Add film"}
+              {saving ? (
+                <Loader2 aria-hidden className="size-4 animate-spin" />
+              ) : (
+                !editingId && <Plus aria-hidden className="size-4" />
+              )}{" "}
+              {editingId ? "Save changes" : "Add film"}
             </button>
             {editingId && (
               <button type="button" className="btn-outline" onClick={reset}>

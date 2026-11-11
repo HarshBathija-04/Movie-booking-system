@@ -24,6 +24,12 @@ export default function AppShell() {
   const { pathname } = useLocation();
 
   useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const links = (
     <>
